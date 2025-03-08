@@ -153,9 +153,9 @@ public class HomeFragment extends Fragment implements CategorySelectionFragment.
                     // Удаляем транзакцию из базы данных
                     databaseHelper.deleteTransaction(transaction.getId());
 
-                    // Обновляем список транзакций
+                    // Обновляем список транзакций (только для текущего типа)
                     transactions.clear();
-                    transactions.addAll(databaseHelper.getAllTransactions());
+                    transactions.addAll(databaseHelper.getTransactionsByType(currentTransactionType)); // Загружаем только текущий тип
                     adapter.notifyDataSetChanged();
 
                     // Обновляем диаграмму
