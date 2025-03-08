@@ -31,6 +31,25 @@
         android:text="Дата и время не выбраны"
         android:layout_marginTop="8dp" />
 
+    <RadioGroup
+        android:id="@+id/radioGroupTransactionType"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <RadioButton
+            android:id="@+id/radioIncome"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Доход" />
+
+        <RadioButton
+            android:id="@+id/radioExpense"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Расход" />
+    </RadioGroup>
+
     <Button
         android:id="@+id/btnSave"
         android:layout_width="match_parent"

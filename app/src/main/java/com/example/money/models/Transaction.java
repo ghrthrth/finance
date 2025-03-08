@@ -8,11 +8,14 @@ public class Transaction {
     private double amount;
     private Date date; // Новое поле для даты и времени
 
-    public Transaction(int id, String category, double amount, Date date) {
+    private int type; // "income" или "expense"
+
+    public Transaction(int id, String category, double amount, Date date, int type) {
         this.id = id;
         this.category = category;
         this.amount = amount;
         this.date = date;
+        this.type = type;
     }
 
     public int getId() {
@@ -29,5 +32,9 @@ public class Transaction {
 
     public Date getDate() {
         return date;
+    }
+
+    public int getType() {
+        return type;
     }
 }

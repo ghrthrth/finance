@@ -12,6 +12,8 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.DatePicker;
 import android.widget.EditText;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
 import android.widget.TimePicker;
 import android.widget.Toast;
 
@@ -135,6 +137,9 @@ public class HomeFragment extends Fragment implements CategorySelectionFragment.
         Button btnChooseCategory = bottomSheetView.findViewById(R.id.btnChooseCategory);
         Button btnSave = bottomSheetView.findViewById(R.id.btnSave);
         Button btnChooseDateTime = bottomSheetView.findViewById(R.id.btnChooseDateTime); // Одна кнопка для выбора даты и времени
+        RadioGroup radioGroupTransactionType = bottomSheetView.findViewById(R.id.radioGroupTransactionType);
+        RadioButton radioIncome = bottomSheetView.findViewById(R.id.radioIncome);
+        RadioButton radioExpense = bottomSheetView.findViewById(R.id.radioExpense);
 
         // Восстанавливаем ранее введенную сумму (если есть)
         if (!amountStr.isEmpty()) {
@@ -204,8 +209,11 @@ public class HomeFragment extends Fragment implements CategorySelectionFragment.
             if (!amountStr.isEmpty() && selectedCategory != null && selectedDate != null) {
                 double amount = Double.parseDouble(amountStr); // Преобразуем сумму в double
 
+                // Определяем тип транзакции
+                int type = radioIncome.isChecked() ? 0 : 1;
+
                 // Добавляем транзакцию в базу данных
-                databaseHelper.addTransaction(selectedCategory, amount, selectedDate);
+                databaseHelper.addTransaction(selectedCategory, amount, selectedDate, type);
 
                 // Обновляем список транзакций
                 transactions.clear();
@@ -222,6 +230,7 @@ public class HomeFragment extends Fragment implements CategorySelectionFragment.
             }
         });
 
+
         bottomSheetDialog.show();
     }
 
@@ -236,65 +245,58 @@ public class HomeFragment extends Fragment implements CategorySelectionFragment.
     }
 
     private void updateChart() {
-        // Получаем все транзакции из базы данных
         List<Transaction> transactions = databaseHelper.getAllTransactions();
+        Map<String, Float> incomeMap = new HashMap<>();
+        Map<String, Float> expenseMap = new HashMap<>();
 
-        // Создаем карту для группировки транзакций по категориям
-        Map<String, Float> categoryAmountMap = new HashMap<>();
-
-        // Собираем данные по категориям
         for (Transaction transaction : transactions) {
             String category = transaction.getCategory();
             float amount = (float) transaction.getAmount();
+            int type = transaction.getType();
 
-            if (categoryAmountMap.containsKey(category)) {
-                // Если категория уже есть в карте, добавляем сумму
-                categoryAmountMap.put(category, categoryAmountMap.get(category) + amount);
-            } else {
-                // Если категории нет в карте, добавляем новую запись
-                categoryAmountMap.put(category, amount);
+            if (type == 0) {
+                incomeMap.put(category, incomeMap.getOrDefault(category, 0f) + amount);
+            } else if (type == 1) {
+                expenseMap.put(category, expenseMap.getOrDefault(category, 0f) + amount);
             }
         }
 
-        // Проверяем, есть ли данные для отображения
-        boolean hasNonZeroValues = false;
-        for (float value : categoryAmountMap.values()) {
-            if (value > 0) {
-                hasNonZeroValues = true;
-                break;
-            }
+        // Объединяем данные для отображения в одной диаграмме
+        Map<String, Float> combinedMap = new HashMap<>();
+        for (Map.Entry<String, Float> entry : incomeMap.entrySet()) {
+            combinedMap.put("Доход: " + entry.getKey(), entry.getValue());
+        }
+        for (Map.Entry<String, Float> entry : expenseMap.entrySet()) {
+            combinedMap.put("Расход: " + entry.getKey(), entry.getValue());
         }
 
-        if (!hasNonZeroValues) {
-            // Если данных нет, скрываем диаграмму
+        updatePieChart(combinedMap, "Доходы и расходы", new int[]{Color.GREEN, Color.RED});
+    }
+
+    private void updatePieChart(Map<String, Float> dataMap, String label, int[] colors) {
+        if (dataMap.isEmpty()) {
             pieChart.clear();
             pieChart.setVisibility(View.GONE);
             pieChart.invalidate();
             return;
         }
 
-        // Показываем диаграмму, если есть данные
         pieChart.setVisibility(View.VISIBLE);
 
-        // Создаем записи для диаграммы
         List<PieEntry> entries = new ArrayList<>();
-        for (Map.Entry<String, Float> entry : categoryAmountMap.entrySet()) {
+        for (Map.Entry<String, Float> entry : dataMap.entrySet()) {
             entries.add(new PieEntry(entry.getValue(), entry.getKey()));
         }
 
-        // Настройка данных для диаграммы
-        PieDataSet dataSet = new PieDataSet(entries, "");
-        dataSet.setColors(new int[]{0xFF77DD77, 0xFF89CFF0, 0xFFFF6961}); // Цвета для категорий
-        dataSet.setValueTextSize(12f); // Размер текста значений
-        dataSet.setValueTextColor(Color.BLACK); // Цвет текста значений
+        PieDataSet dataSet = new PieDataSet(entries, label);
+        dataSet.setColors(colors); // Используем массив цветов
+        dataSet.setValueTextSize(12f);
+        dataSet.setValueTextColor(Color.BLACK);
 
         PieData data = new PieData(dataSet);
         pieChart.setData(data);
 
-        // Анимация диаграммы
         pieChart.animateY(1000, Easing.EaseInOutQuad);
-
-        // Обновление диаграммы
         pieChart.invalidate();
     }
 
