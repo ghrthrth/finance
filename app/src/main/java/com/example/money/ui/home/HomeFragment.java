@@ -24,6 +24,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.money.R;
 import com.example.money.databinding.FragmentHomeBinding;
+import com.example.money.models.Category;
 import com.example.money.models.Transaction;
 import com.example.money.ui.category.CategorySelectionFragment;
 import com.example.money.utils.DatabaseHelper;
@@ -51,6 +52,8 @@ public class HomeFragment extends Fragment implements CategorySelectionFragment.
     private List<Transaction> transactions = new ArrayList<>();
     private TransactionAdapter adapter;
     private DatabaseHelper databaseHelper;
+
+    private int currentTransactionType = 1; // 0 - доходы, 1 - расходы (по умолчанию расходы)
 
     private String selectedCategory; // Переменная для хранения выбранной категории
     private String amountStr = ""; // Переменная для хранения введенной суммы
@@ -82,11 +85,14 @@ public class HomeFragment extends Fragment implements CategorySelectionFragment.
         // Обработчик нажатия на кнопку
         btnAddTransaction.setOnClickListener(v -> addTransaction());
 
+        // Обработчик нажатия на заголовок "Учет расходов"
+        binding.tvTitle.setOnClickListener(v -> showFunctionalitySelectionDialog());
+
         // Очищаем список транзакций перед загрузкой новых данных
         transactions.clear();
 
-        // Загрузка транзакций из базы данных
-        transactions.addAll(databaseHelper.getAllTransactions());
+        // Загрузка транзакций из базы данных (только расходы, так как currentTransactionType = 1 по умолчанию)
+        transactions.addAll(databaseHelper.getTransactionsByType(currentTransactionType)); // Загружаем только расходы
         adapter.notifyDataSetChanged();
 
         updateChart(); // Обновление диаграммы
@@ -95,7 +101,44 @@ public class HomeFragment extends Fragment implements CategorySelectionFragment.
 
         return root;
     }
+    private void showFunctionalitySelectionDialog() {
+        BottomSheetDialog bottomSheetDialog = new BottomSheetDialog(requireContext());
+        View bottomSheetView = LayoutInflater.from(requireContext()).inflate(R.layout.bottom_sheet_functionality_selection, null);
+        bottomSheetDialog.setContentView(bottomSheetView);
 
+        Button btnIncome = bottomSheetView.findViewById(R.id.btnIncome);
+        Button btnExpense = bottomSheetView.findViewById(R.id.btnExpense);
+
+        btnIncome.setOnClickListener(v -> {
+            setTransactionType(0); // Устанавливаем тип "Доходы"
+            bottomSheetDialog.dismiss();
+        });
+
+        btnExpense.setOnClickListener(v -> {
+            setTransactionType(1); // Устанавливаем тип "Расходы"
+            bottomSheetDialog.dismiss();
+        });
+
+        bottomSheetDialog.show();
+    }
+
+    private void loadIncomeFunctionality() {
+        // Логика для загрузки функционала доходов
+        transactions.clear();
+        transactions.addAll(databaseHelper.getTransactionsByType(0)); // 0 - тип для доходов
+        adapter.notifyDataSetChanged();
+        updateChart();
+        Toast.makeText(requireContext(), "Загружены доходы", Toast.LENGTH_SHORT).show();
+    }
+
+    private void loadExpenseFunctionality() {
+        // Логика для загрузки функционала расходов
+        transactions.clear();
+        transactions.addAll(databaseHelper.getTransactionsByType(1)); // 1 - тип для расходов
+        adapter.notifyDataSetChanged();
+        updateChart();
+        Toast.makeText(requireContext(), "Загружены расходы", Toast.LENGTH_SHORT).show();
+    }
     @Override
     public void onItemClick(Transaction transaction) {
         // Показываем диалог подтверждения удаления
@@ -144,11 +187,6 @@ public class HomeFragment extends Fragment implements CategorySelectionFragment.
         // Восстанавливаем ранее введенную сумму (если есть)
         if (!amountStr.isEmpty()) {
             etAmount.setText(amountStr);
-        }
-
-        // Восстанавливаем выбранную категорию (если есть)
-        if (selectedCategory != null) {
-            btnChooseCategory.setText(selectedCategory);
         }
 
         // Восстанавливаем выбранную дату и время (если есть)
@@ -215,9 +253,9 @@ public class HomeFragment extends Fragment implements CategorySelectionFragment.
                 // Добавляем транзакцию в базу данных
                 databaseHelper.addTransaction(selectedCategory, amount, selectedDate, type);
 
-                // Обновляем список транзакций
+                // Обновляем список транзакций (только для текущего типа)
                 transactions.clear();
-                transactions.addAll(databaseHelper.getAllTransactions());
+                transactions.addAll(databaseHelper.getTransactionsByType(currentTransactionType)); // Загружаем только текущий тип
                 adapter.notifyDataSetChanged();
 
                 // Обновляем диаграмму
@@ -229,7 +267,6 @@ public class HomeFragment extends Fragment implements CategorySelectionFragment.
                 Toast.makeText(requireContext(), "Введите сумму, выберите категорию и дату", Toast.LENGTH_SHORT).show();
             }
         });
-
 
         bottomSheetDialog.show();
     }
@@ -245,36 +282,55 @@ public class HomeFragment extends Fragment implements CategorySelectionFragment.
     }
 
     private void updateChart() {
-        List<Transaction> transactions = databaseHelper.getAllTransactions();
-        Map<String, Float> incomeMap = new HashMap<>();
-        Map<String, Float> expenseMap = new HashMap<>();
+        List<Transaction> transactions = databaseHelper.getTransactionsByType(currentTransactionType);
+        Map<String, Float> dataMap = new HashMap<>();
+        Map<String, Integer> colorMap = new HashMap<>(); // Для хранения цветов категорий
 
+        // Получаем все категории с их цветами
+        List<Category> categories = databaseHelper.getAllCategories();
+        for (Category category : categories) {
+            colorMap.put(category.getName(), category.getColor()); // Сохраняем цвета
+        }
+
+        // Суммируем суммы по категориям
         for (Transaction transaction : transactions) {
             String category = transaction.getCategory();
             float amount = (float) transaction.getAmount();
-            int type = transaction.getType();
+            dataMap.put(category, dataMap.getOrDefault(category, 0f) + amount);
+        }
 
-            if (type == 0) {
-                incomeMap.put(category, incomeMap.getOrDefault(category, 0f) + amount);
-            } else if (type == 1) {
-                expenseMap.put(category, expenseMap.getOrDefault(category, 0f) + amount);
+        // Подготавливаем данные для диаграммы
+        List<PieEntry> entries = new ArrayList<>();
+        List<Integer> colors = new ArrayList<>(); // Список цветов для каждой категории
+
+        for (Map.Entry<String, Float> entry : dataMap.entrySet()) {
+            String category = entry.getKey();
+            Integer color = colorMap.get(category);
+            if (color != null) {
+                entries.add(new PieEntry(entry.getValue(), category));
+                colors.add(color); // Добавляем цвет категории
             }
         }
 
-        // Объединяем данные для отображения в одной диаграмме
-        Map<String, Float> combinedMap = new HashMap<>();
-        for (Map.Entry<String, Float> entry : incomeMap.entrySet()) {
-            combinedMap.put("Доход: " + entry.getKey(), entry.getValue());
-        }
-        for (Map.Entry<String, Float> entry : expenseMap.entrySet()) {
-            combinedMap.put("Расход: " + entry.getKey(), entry.getValue());
-        }
-
-        updatePieChart(combinedMap, "Доходы и расходы", new int[]{Color.GREEN, Color.RED});
+        // Обновляем график
+        updatePieChart(entries, colors, currentTransactionType == 0 ? "Доходы" : "Расходы");
     }
 
-    private void updatePieChart(Map<String, Float> dataMap, String label, int[] colors) {
-        if (dataMap.isEmpty()) {
+    public void setTransactionType(int type) {
+        this.currentTransactionType = type; // Устанавливаем тип (0 - доходы, 1 - расходы)
+
+        if (type == 0) {
+            loadIncomeFunctionality(); // Загружаем доходы
+            binding.tvTitle.setText("Учет доходов"); // Обновляем заголовок
+        } else {
+            loadExpenseFunctionality(); // Загружаем расходы
+            binding.tvTitle.setText("Учет расходов"); // Обновляем заголовок
+        }
+
+        updateChart(); // Обновляем график
+    }
+    private void updatePieChart(List<PieEntry> entries, List<Integer> colors, String label) {
+        if (entries == null || entries.isEmpty() || colors == null || colors.isEmpty()) {
             pieChart.clear();
             pieChart.setVisibility(View.GONE);
             pieChart.invalidate();
@@ -283,13 +339,8 @@ public class HomeFragment extends Fragment implements CategorySelectionFragment.
 
         pieChart.setVisibility(View.VISIBLE);
 
-        List<PieEntry> entries = new ArrayList<>();
-        for (Map.Entry<String, Float> entry : dataMap.entrySet()) {
-            entries.add(new PieEntry(entry.getValue(), entry.getKey()));
-        }
-
         PieDataSet dataSet = new PieDataSet(entries, label);
-        dataSet.setColors(colors); // Используем массив цветов
+        dataSet.setColors(colors); // Устанавливаем цвета для каждой категории
         dataSet.setValueTextSize(12f);
         dataSet.setValueTextColor(Color.BLACK);
 

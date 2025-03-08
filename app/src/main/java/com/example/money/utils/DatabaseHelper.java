@@ -5,23 +5,27 @@ import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.graphics.Color;
 import android.util.Log;
 
+import com.example.money.models.Category;
 import com.example.money.models.Transaction;
 
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Random;
 
 public class DatabaseHelper extends SQLiteOpenHelper {
 
     private static final String DATABASE_NAME = "money.db";
-    private static final int DATABASE_VERSION = 4; // Увеличиваем версию базы данных
+    private static final int DATABASE_VERSION = 5; // Увеличиваем версию базы данных
 
     // Таблица категорий
     private static final String TABLE_CATEGORIES = "categories";
     private static final String COLUMN_CATEGORY_ID = "id";
     private static final String COLUMN_CATEGORY_NAME = "name";
+    private static final String COLUMN_CATEGORY_COLOR = "color"; // Новое поле для цвета
 
     // Таблица транзакций
     private static final String TABLE_TRANSACTIONS = "transactions";
@@ -40,7 +44,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         // Создание таблицы категорий
         String CREATE_CATEGORIES_TABLE = "CREATE TABLE " + TABLE_CATEGORIES + "("
                 + COLUMN_CATEGORY_ID + " INTEGER PRIMARY KEY AUTOINCREMENT,"
-                + COLUMN_CATEGORY_NAME + " TEXT UNIQUE)";
+                + COLUMN_CATEGORY_NAME + " TEXT UNIQUE,"
+                + COLUMN_CATEGORY_COLOR + " INTEGER)"; // Новое поле для цвета
         db.execSQL(CREATE_CATEGORIES_TABLE);
 
         // Создание таблицы транзакций
@@ -51,33 +56,66 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 + COLUMN_TRANSACTION_DATE + " INTEGER,"
                 + COLUMN_TRANSACTION_TYPE + " INTEGER)"; // Поле для типа транзакции
         db.execSQL(CREATE_TRANSACTIONS_TABLE);
+
+        Log.d("DatabaseHelper", "Таблица categories создана");
     }
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+        Log.d("DatabaseHelper", "Обновление базы данных с версии " + oldVersion + " до " + newVersion);
+
         if (oldVersion < 4) {
-            db.execSQL("ALTER TABLE " + TABLE_TRANSACTIONS + " ADD COLUMN " + COLUMN_TRANSACTION_TYPE + " INTEGER");
+            db.execSQL("ALTER TABLE " + TABLE_TRANSACTIONS + " ADD COLUMN " + COLUMN_TRANSACTION_TYPE + " INTEGER DEFAULT 0");
+            Log.d("DatabaseHelper", "Добавлен столбец " + COLUMN_TRANSACTION_TYPE);
+        }
+        if (oldVersion < 5) {
+            db.execSQL("ALTER TABLE " + TABLE_CATEGORIES + " ADD COLUMN " + COLUMN_CATEGORY_COLOR + " INTEGER DEFAULT " + Color.GRAY);
+            Log.d("DatabaseHelper", "Добавлен столбец " + COLUMN_CATEGORY_COLOR);
         }
     }
 
-    // Метод для добавления категории
+    // Метод для добавления категории с генерацией случайного цвета
     public void addCategory(String category) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
         values.put(COLUMN_CATEGORY_NAME, category);
+        values.put(COLUMN_CATEGORY_COLOR, generateRandomColor()); // Генерация случайного цвета
         db.insert(TABLE_CATEGORIES, null, values);
         db.close();
     }
 
-    // Метод для получения всех категорий
-    public List<String> getAllCategories() {
-        List<String> categories = new ArrayList<>();
+    // Метод для генерации случайного цвета
+    private int generateRandomColor() {
+        Random random = new Random();
+        return Color.rgb(
+                random.nextInt(256), // Красный
+                random.nextInt(256), // Зеленый
+                random.nextInt(256)  // Синий
+        );
+    }
+
+    // Метод для получения всех категорий с их цветами
+// Метод для получения всех категорий с их цветами
+    public List<Category> getAllCategories() {
+        List<Category> categories = new ArrayList<>();
         SQLiteDatabase db = this.getReadableDatabase();
         Cursor cursor = db.rawQuery("SELECT * FROM " + TABLE_CATEGORIES, null);
 
         if (cursor.moveToFirst()) {
             do {
-                categories.add(cursor.getString(1)); // Индекс 1 соответствует COLUMN_CATEGORY_NAME
+                // Проверяем, существует ли столбец
+                int idIndex = cursor.getColumnIndex(COLUMN_CATEGORY_ID);
+                int nameIndex = cursor.getColumnIndex(COLUMN_CATEGORY_NAME);
+                int colorIndex = cursor.getColumnIndex(COLUMN_CATEGORY_COLOR);
+
+                if (idIndex != -1 && nameIndex != -1 && colorIndex != -1) {
+                    int id = cursor.getInt(idIndex);
+                    String name = cursor.getString(nameIndex);
+                    int color = cursor.getInt(colorIndex);
+                    categories.add(new Category(id, name, color)); // Используем правильный конструктор
+                } else {
+                    Log.e("DatabaseHelper", "Один из столбцов не найден в таблице categories");
+                }
             } while (cursor.moveToNext());
         }
         cursor.close();
@@ -103,12 +141,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         SQLiteDatabase db = this.getReadableDatabase();
         Cursor cursor = db.rawQuery("SELECT * FROM " + TABLE_TRANSACTIONS, null);
 
-        // Log column names for debugging
-        String[] columnNames = cursor.getColumnNames();
-        for (String name : columnNames) {
-            Log.d("DatabaseHelper", "Column: " + name);
-        }
-
         if (cursor.moveToFirst()) {
             do {
                 int id = cursor.getInt(0); // COLUMN_TRANSACTION_ID
@@ -126,6 +158,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     }
 
     // Метод для удаления категории
+// Метод для удаления категории
     public void deleteCategory(String category) {
         SQLiteDatabase db = this.getWritableDatabase();
         db.delete(TABLE_CATEGORIES, COLUMN_CATEGORY_NAME + " = ?", new String[]{category});
@@ -140,24 +173,43 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     }
 
     // Метод для получения транзакций по типу (доход/расход)
-    public List<Transaction> getTransactionsByType(String type) {
+    public List<Transaction> getTransactionsByType(int type) {
         List<Transaction> transactions = new ArrayList<>();
         SQLiteDatabase db = this.getReadableDatabase();
-        Cursor cursor = db.rawQuery("SELECT * FROM " + TABLE_TRANSACTIONS + " WHERE " + COLUMN_TRANSACTION_TYPE + " = ?", new String[]{type});
+        Cursor cursor = db.rawQuery(
+                "SELECT * FROM " + TABLE_TRANSACTIONS + " WHERE " + COLUMN_TRANSACTION_TYPE + " = ?",
+                new String[]{String.valueOf(type)}
+        );
 
         if (cursor.moveToFirst()) {
             do {
-                int id = cursor.getInt(0); // Индекс 0 соответствует COLUMN_TRANSACTION_ID
-                String category = cursor.getString(1); // Индекс 1 соответствует COLUMN_TRANSACTION_CATEGORY
-                double amount = cursor.getDouble(2); // Индекс 2 соответствует COLUMN_TRANSACTION_AMOUNT
-                long dateMillis = cursor.getLong(3); // Индекс 3 соответствует COLUMN_TRANSACTION_DATE
-                Date date = new Date(dateMillis); // Преобразуем timestamp в Date
-                int transactionType = cursor.getInt(4); // Переименовали переменную
-                transactions.add(new Transaction(id, category, amount, date, transactionType));
+                int id = cursor.getInt(0); // COLUMN_TRANSACTION_ID
+                String category = cursor.getString(1); // COLUMN_TRANSACTION_CATEGORY
+                double amount = cursor.getDouble(2); // COLUMN_TRANSACTION_AMOUNT
+                long dateMillis = cursor.getLong(3); // COLUMN_TRANSACTION_DATE
+                Date date = new Date(dateMillis);
+                transactions.add(new Transaction(id, category, amount, date, type));
             } while (cursor.moveToNext());
         }
         cursor.close();
         db.close();
         return transactions;
+    }
+
+    // Метод для получения цвета категории по её названию
+    public int getCategoryColor(String categoryName) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.rawQuery(
+                "SELECT " + COLUMN_CATEGORY_COLOR + " FROM " + TABLE_CATEGORIES + " WHERE " + COLUMN_CATEGORY_NAME + " = ?",
+                new String[]{categoryName}
+        );
+
+        int color = Color.GRAY; // Цвет по умолчанию, если категория не найдена
+        if (cursor.moveToFirst()) {
+            color = cursor.getInt(0);
+        }
+        cursor.close();
+        db.close();
+        return color;
     }
 }
