@@ -11,7 +11,9 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.money.R;
 import com.example.money.models.Transaction;
 
+import java.text.SimpleDateFormat;
 import java.util.List;
+import java.util.Locale;
 
 public class TransactionAdapter extends RecyclerView.Adapter<TransactionAdapter.ViewHolder> {
     private List<Transaction> transactions;
@@ -55,16 +57,23 @@ public class TransactionAdapter extends RecyclerView.Adapter<TransactionAdapter.
     public static class ViewHolder extends RecyclerView.ViewHolder {
         private final TextView tvCategory;
         private final TextView tvAmount;
+        private final TextView tvDateTime; // Добавьте TextView для даты и времени
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
             tvCategory = itemView.findViewById(R.id.tvCategory);
             tvAmount = itemView.findViewById(R.id.tvAmount);
+            tvDateTime = itemView.findViewById(R.id.tvDateTime); // Инициализируйте TextView для даты и времени
         }
 
         public void bind(Transaction transaction) {
             tvCategory.setText(transaction.getCategory());
             tvAmount.setText(String.valueOf(transaction.getAmount()));
+
+            // Форматируем дату и время
+            SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault());
+            String dateTime = dateFormat.format(transaction.getDate());
+            tvDateTime.setText(dateTime); // Устанавливаем отформатированную дату и время
         }
     }
 }

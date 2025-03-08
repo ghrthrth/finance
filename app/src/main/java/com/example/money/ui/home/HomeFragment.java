@@ -1,6 +1,8 @@
 package com.example.money.ui.home;
 
 import android.app.AlertDialog;
+import android.app.DatePickerDialog;
+import android.app.TimePickerDialog;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
@@ -8,7 +10,9 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.DatePicker;
 import android.widget.EditText;
+import android.widget.TimePicker;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -28,7 +32,10 @@ import com.github.mikephil.charting.data.PieDataSet;
 import com.github.mikephil.charting.data.PieEntry;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -45,6 +52,7 @@ public class HomeFragment extends Fragment implements CategorySelectionFragment.
 
     private String selectedCategory; // Переменная для хранения выбранной категории
     private String amountStr = ""; // Переменная для хранения введенной суммы
+    private Date selectedDate; // Переменная для хранения выбранной даты и времени
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
@@ -72,9 +80,12 @@ public class HomeFragment extends Fragment implements CategorySelectionFragment.
         // Обработчик нажатия на кнопку
         btnAddTransaction.setOnClickListener(v -> addTransaction());
 
+        // Очищаем список транзакций перед загрузкой новых данных
         transactions.clear();
+
+        // Загрузка транзакций из базы данных
         transactions.addAll(databaseHelper.getAllTransactions());
-        adapter.notifyDataSetChanged(); // Обновляем адаптер
+        adapter.notifyDataSetChanged();
 
         updateChart(); // Обновление диаграммы
 
@@ -82,11 +93,13 @@ public class HomeFragment extends Fragment implements CategorySelectionFragment.
 
         return root;
     }
+
     @Override
     public void onItemClick(Transaction transaction) {
         // Показываем диалог подтверждения удаления
         showDeleteConfirmationDialog(transaction);
     }
+
     private void showDeleteConfirmationDialog(Transaction transaction) {
         new AlertDialog.Builder(requireContext())
                 .setTitle("Удаление транзакции")
@@ -108,6 +121,7 @@ public class HomeFragment extends Fragment implements CategorySelectionFragment.
                 .setNegativeButton("Отмена", null)
                 .show();
     }
+
     private void addTransaction() {
         showBottomSheetDialog();
     }
@@ -120,10 +134,21 @@ public class HomeFragment extends Fragment implements CategorySelectionFragment.
         EditText etAmount = bottomSheetView.findViewById(R.id.etAmount);
         Button btnChooseCategory = bottomSheetView.findViewById(R.id.btnChooseCategory);
         Button btnSave = bottomSheetView.findViewById(R.id.btnSave);
+        Button btnChooseDateTime = bottomSheetView.findViewById(R.id.btnChooseDateTime); // Одна кнопка для выбора даты и времени
 
         // Восстанавливаем ранее введенную сумму (если есть)
         if (!amountStr.isEmpty()) {
             etAmount.setText(amountStr);
+        }
+
+        // Восстанавливаем выбранную категорию (если есть)
+        if (selectedCategory != null) {
+            btnChooseCategory.setText(selectedCategory);
+        }
+
+        // Восстанавливаем выбранную дату и время (если есть)
+        if (selectedDate != null) {
+            btnChooseDateTime.setText(new SimpleDateFormat("dd/MM/yyyy HH:mm").format(selectedDate));
         }
 
         btnChooseCategory.setOnClickListener(v -> {
@@ -145,13 +170,42 @@ public class HomeFragment extends Fragment implements CategorySelectionFragment.
                     .commit();
         });
 
+        btnChooseDateTime.setOnClickListener(v -> {
+            // Сначала показываем DatePickerDialog для выбора даты
+            Calendar calendar = Calendar.getInstance();
+            int year = calendar.get(Calendar.YEAR);
+            int month = calendar.get(Calendar.MONTH);
+            int day = calendar.get(Calendar.DAY_OF_MONTH);
+
+            DatePickerDialog datePickerDialog = new DatePickerDialog(requireContext(), (view, year1, month1, dayOfMonth) -> {
+                // Сохраняем выбранную дату
+                calendar.set(year1, month1, dayOfMonth);
+
+                // После выбора даты показываем TimePickerDialog для выбора времени
+                int hour = calendar.get(Calendar.HOUR_OF_DAY);
+                int minute = calendar.get(Calendar.MINUTE);
+
+                TimePickerDialog timePickerDialog = new TimePickerDialog(requireContext(), (view1, hourOfDay, minute1) -> {
+                    // Сохраняем выбранное время
+                    calendar.set(Calendar.HOUR_OF_DAY, hourOfDay);
+                    calendar.set(Calendar.MINUTE, minute1);
+                    selectedDate = calendar.getTime();
+
+                    // Обновляем текст на кнопке
+                    btnChooseDateTime.setText(new SimpleDateFormat("dd/MM/yyyy HH:mm").format(selectedDate));
+                }, hour, minute, true);
+                timePickerDialog.show();
+            }, year, month, day);
+            datePickerDialog.show();
+        });
+
         btnSave.setOnClickListener(v -> {
             String amountStr = etAmount.getText().toString();
-            if (!amountStr.isEmpty() && selectedCategory != null) {
-                double amount = Double.parseDouble(amountStr);
+            if (!amountStr.isEmpty() && selectedCategory != null && selectedDate != null) {
+                double amount = Double.parseDouble(amountStr); // Преобразуем сумму в double
 
                 // Добавляем транзакцию в базу данных
-                databaseHelper.addTransaction(selectedCategory, amount);
+                databaseHelper.addTransaction(selectedCategory, amount, selectedDate);
 
                 // Обновляем список транзакций
                 transactions.clear();
@@ -161,15 +215,10 @@ public class HomeFragment extends Fragment implements CategorySelectionFragment.
                 // Обновляем диаграмму
                 updateChart();
 
-                // Очищаем состояние BottomSheetDialog
-                etAmount.setText("");
-                selectedCategory = null;
-                amountStr = "";
-
                 // Закрываем BottomSheetDialog
                 bottomSheetDialog.dismiss();
             } else {
-                Toast.makeText(requireContext(), "Введите сумму и выберите категорию", Toast.LENGTH_SHORT).show();
+                Toast.makeText(requireContext(), "Введите сумму, выберите категорию и дату", Toast.LENGTH_SHORT).show();
             }
         });
 

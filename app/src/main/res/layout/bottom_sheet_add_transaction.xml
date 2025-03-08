@@ -19,6 +19,19 @@
         android:text="Выбрать категорию"/>
 
     <Button
+        android:id="@+id/btnChooseDateTime"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Выбрать дату и время" />
+
+    <TextView
+        android:id="@+id/tvSelectedDateTime"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Дата и время не выбраны"
+        android:layout_marginTop="8dp" />
+
+    <Button
         android:id="@+id/btnSave"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
