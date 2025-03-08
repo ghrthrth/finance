@@ -72,9 +72,9 @@ public class HomeFragment extends Fragment implements CategorySelectionFragment.
         // Обработчик нажатия на кнопку
         btnAddTransaction.setOnClickListener(v -> addTransaction());
 
-        // Загрузка транзакций из базы данных
+        transactions.clear();
         transactions.addAll(databaseHelper.getAllTransactions());
-        adapter.notifyDataSetChanged();
+        adapter.notifyDataSetChanged(); // Обновляем адаптер
 
         updateChart(); // Обновление диаграммы
 
@@ -126,11 +126,6 @@ public class HomeFragment extends Fragment implements CategorySelectionFragment.
             etAmount.setText(amountStr);
         }
 
-        // Восстанавливаем выбранную категорию (если есть)
-        if (selectedCategory != null) {
-            btnChooseCategory.setText(selectedCategory);
-        }
-
         btnChooseCategory.setOnClickListener(v -> {
             // Сохраняем введенную сумму
             amountStr = etAmount.getText().toString();
@@ -153,7 +148,7 @@ public class HomeFragment extends Fragment implements CategorySelectionFragment.
         btnSave.setOnClickListener(v -> {
             String amountStr = etAmount.getText().toString();
             if (!amountStr.isEmpty() && selectedCategory != null) {
-                double amount = Double.parseDouble(amountStr); // Преобразуем сумму в double
+                double amount = Double.parseDouble(amountStr);
 
                 // Добавляем транзакцию в базу данных
                 databaseHelper.addTransaction(selectedCategory, amount);
@@ -165,6 +160,11 @@ public class HomeFragment extends Fragment implements CategorySelectionFragment.
 
                 // Обновляем диаграмму
                 updateChart();
+
+                // Очищаем состояние BottomSheetDialog
+                etAmount.setText("");
+                selectedCategory = null;
+                amountStr = "";
 
                 // Закрываем BottomSheetDialog
                 bottomSheetDialog.dismiss();
