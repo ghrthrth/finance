@@ -2,7 +2,6 @@ package com.example.money.ui.category;
 
 import android.app.AlertDialog;
 import android.content.Context;
-import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -16,19 +15,17 @@ import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 
 import com.example.money.R;
+import com.example.money.utils.DatabaseHelper;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 public class CategorySelectionFragment extends Fragment {
 
     private OnCategorySelectedListener listener;
     private List<String> categories;
     private ArrayAdapter<String> adapter;
-    private SharedPreferences sharedPreferences;
+    private DatabaseHelper databaseHelper;
 
     // Интерфейс для передачи выбранной категории
     public interface OnCategorySelectedListener {
@@ -50,14 +47,14 @@ public class CategorySelectionFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_category_selection, container, false);
 
-        // Инициализация SharedPreferences для хранения категорий
-        sharedPreferences = requireContext().getSharedPreferences("categories", Context.MODE_PRIVATE);
+        // Инициализация DatabaseHelper
+        databaseHelper = new DatabaseHelper(requireContext());
 
         // Инициализация GridView
         GridView gridView = view.findViewById(R.id.gridViewCategories);
 
-        // Загрузка категорий из SharedPreferences
-        categories = new ArrayList<>(loadCategories());
+        // Загрузка категорий из базы данных
+        categories = databaseHelper.getAllCategories();
 
         // Адаптер для GridView
         adapter = new ArrayAdapter<>(requireContext(), android.R.layout.simple_list_item_1, categories);
@@ -93,8 +90,8 @@ public class CategorySelectionFragment extends Fragment {
         builder.setPositiveButton("Добавить", (dialog, which) -> {
             String categoryName = input.getText().toString().trim();
             if (!categoryName.isEmpty()) {
-                categories.add(categoryName);
-                saveCategories(categories); // Сохраняем категории
+                databaseHelper.addCategory(categoryName); // Добавляем категорию в базу данных
+                categories.add(categoryName); // Обновляем список категорий
                 adapter.notifyDataSetChanged(); // Обновляем GridView
             }
         });
@@ -103,19 +100,5 @@ public class CategorySelectionFragment extends Fragment {
         builder.setNegativeButton("Отмена", (dialog, which) -> dialog.cancel());
 
         builder.show();
-    }
-
-    // Сохранение категорий в SharedPreferences
-    private void saveCategories(List<String> categories) {
-        Set<String> categorySet = new HashSet<>(categories);
-        SharedPreferences.Editor editor = sharedPreferences.edit();
-        editor.putStringSet("category_list", categorySet);
-        editor.apply();
-    }
-
-    // Загрузка категорий из SharedPreferences
-    private Set<String> loadCategories() {
-        Set<String> defaultCategories = new HashSet<>(Arrays.asList("Еда", "Транспорт", "Развлечения", "Жилье", "Здоровье", "Одежда"));
-        return sharedPreferences.getStringSet("category_list", defaultCategories);
     }
 }

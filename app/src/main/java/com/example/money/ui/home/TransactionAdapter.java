@@ -9,14 +9,22 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.money.R;
+import com.example.money.models.Transaction;
 
 import java.util.List;
 
 public class TransactionAdapter extends RecyclerView.Adapter<TransactionAdapter.ViewHolder> {
     private List<Transaction> transactions;
+    private OnItemClickListener listener;
 
-    public TransactionAdapter(List<Transaction> transactions) {
+    // Интерфейс для обработки нажатий
+    public interface OnItemClickListener {
+        void onItemClick(Transaction transaction);
+    }
+
+    public TransactionAdapter(List<Transaction> transactions, OnItemClickListener listener) {
         this.transactions = transactions;
+        this.listener = listener;
     }
 
     @NonNull
@@ -30,6 +38,13 @@ public class TransactionAdapter extends RecyclerView.Adapter<TransactionAdapter.
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Transaction transaction = transactions.get(position);
         holder.bind(transaction);
+
+        // Обработчик нажатия на элемент списка
+        holder.itemView.setOnClickListener(v -> {
+            if (listener != null) {
+                listener.onItemClick(transaction);
+            }
+        });
     }
 
     @Override

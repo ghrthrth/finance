@@ -1,7 +1,6 @@
 package com.example.money.ui.home;
 
-import android.app.Activity;
-import android.content.Intent;
+import android.app.AlertDialog;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
@@ -19,7 +18,9 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.money.R;
 import com.example.money.databinding.FragmentHomeBinding;
+import com.example.money.models.Transaction;
 import com.example.money.ui.category.CategorySelectionFragment;
+import com.example.money.utils.DatabaseHelper;
 import com.github.mikephil.charting.animation.Easing;
 import com.github.mikephil.charting.charts.PieChart;
 import com.github.mikephil.charting.data.PieData;
@@ -32,7 +33,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class HomeFragment extends Fragment implements CategorySelectionFragment.OnCategorySelectedListener {
+public class HomeFragment extends Fragment implements CategorySelectionFragment.OnCategorySelectedListener, TransactionAdapter.OnItemClickListener {
 
     private FragmentHomeBinding binding;
     private PieChart pieChart;
@@ -40,6 +41,7 @@ public class HomeFragment extends Fragment implements CategorySelectionFragment.
     private Button btnAddTransaction;
     private List<Transaction> transactions = new ArrayList<>();
     private TransactionAdapter adapter;
+    private DatabaseHelper databaseHelper;
 
     private String selectedCategory; // Переменная для хранения выбранной категории
     private String amountStr = ""; // Переменная для хранения введенной суммы
@@ -52,6 +54,9 @@ public class HomeFragment extends Fragment implements CategorySelectionFragment.
         binding = FragmentHomeBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
 
+        // Инициализация DatabaseHelper
+        databaseHelper = new DatabaseHelper(requireContext());
+
         // Инициализация элементов интерфейса
         pieChart = binding.pieChart;
         btnAddTransaction = binding.btnAddTransaction;
@@ -59,7 +64,7 @@ public class HomeFragment extends Fragment implements CategorySelectionFragment.
 
         // Настройка RecyclerView
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
-        adapter = new TransactionAdapter(transactions);
+        adapter = new TransactionAdapter(transactions, this); // Передаем this как слушатель
         recyclerView.setAdapter(adapter);
 
         pieChart.getDescription().setEnabled(false); // Отключение описания (label) диаграммы
@@ -67,13 +72,42 @@ public class HomeFragment extends Fragment implements CategorySelectionFragment.
         // Обработчик нажатия на кнопку
         btnAddTransaction.setOnClickListener(v -> addTransaction());
 
+        // Загрузка транзакций из базы данных
+        transactions.addAll(databaseHelper.getAllTransactions());
+        adapter.notifyDataSetChanged();
+
         updateChart(); // Обновление диаграммы
 
         pieChart.animateY(1000, Easing.EaseInOutQuad); // Плавная анимация с ускорением и замедлением
 
         return root;
     }
+    @Override
+    public void onItemClick(Transaction transaction) {
+        // Показываем диалог подтверждения удаления
+        showDeleteConfirmationDialog(transaction);
+    }
+    private void showDeleteConfirmationDialog(Transaction transaction) {
+        new AlertDialog.Builder(requireContext())
+                .setTitle("Удаление транзакции")
+                .setMessage("Вы уверены, что хотите удалить эту транзакцию?")
+                .setPositiveButton("Удалить", (dialog, which) -> {
+                    // Удаляем транзакцию из базы данных
+                    databaseHelper.deleteTransaction(transaction.getId());
 
+                    // Обновляем список транзакций
+                    transactions.clear();
+                    transactions.addAll(databaseHelper.getAllTransactions());
+                    adapter.notifyDataSetChanged();
+
+                    // Обновляем диаграмму
+                    updateChart();
+
+                    Toast.makeText(requireContext(), "Транзакция удалена", Toast.LENGTH_SHORT).show();
+                })
+                .setNegativeButton("Отмена", null)
+                .show();
+    }
     private void addTransaction() {
         showBottomSheetDialog();
     }
@@ -119,14 +153,20 @@ public class HomeFragment extends Fragment implements CategorySelectionFragment.
         btnSave.setOnClickListener(v -> {
             String amountStr = etAmount.getText().toString();
             if (!amountStr.isEmpty() && selectedCategory != null) {
-                int amount = Integer.parseInt(amountStr);
-                // Добавляем транзакцию
-                transactions.add(new Transaction.Builder()
-                        .setCategory(selectedCategory)
-                        .setAmount(amount)
-                        .build());
+                double amount = Double.parseDouble(amountStr); // Преобразуем сумму в double
+
+                // Добавляем транзакцию в базу данных
+                databaseHelper.addTransaction(selectedCategory, amount);
+
+                // Обновляем список транзакций
+                transactions.clear();
+                transactions.addAll(databaseHelper.getAllTransactions());
                 adapter.notifyDataSetChanged();
+
+                // Обновляем диаграмму
                 updateChart();
+
+                // Закрываем BottomSheetDialog
                 bottomSheetDialog.dismiss();
             } else {
                 Toast.makeText(requireContext(), "Введите сумму и выберите категорию", Toast.LENGTH_SHORT).show();
@@ -147,19 +187,27 @@ public class HomeFragment extends Fragment implements CategorySelectionFragment.
     }
 
     private void updateChart() {
+        // Получаем все транзакции из базы данных
+        List<Transaction> transactions = databaseHelper.getAllTransactions();
+
+        // Создаем карту для группировки транзакций по категориям
         Map<String, Float> categoryAmountMap = new HashMap<>();
 
         // Собираем данные по категориям
         for (Transaction transaction : transactions) {
             String category = transaction.getCategory();
             float amount = (float) transaction.getAmount();
+
             if (categoryAmountMap.containsKey(category)) {
+                // Если категория уже есть в карте, добавляем сумму
                 categoryAmountMap.put(category, categoryAmountMap.get(category) + amount);
             } else {
+                // Если категории нет в карте, добавляем новую запись
                 categoryAmountMap.put(category, amount);
             }
         }
 
+        // Проверяем, есть ли данные для отображения
         boolean hasNonZeroValues = false;
         for (float value : categoryAmountMap.values()) {
             if (value > 0) {
@@ -169,8 +217,9 @@ public class HomeFragment extends Fragment implements CategorySelectionFragment.
         }
 
         if (!hasNonZeroValues) {
+            // Если данных нет, скрываем диаграмму
             pieChart.clear();
-            pieChart.setVisibility(View.GONE); // Скрываем диаграмму и освобождаем место
+            pieChart.setVisibility(View.GONE);
             pieChart.invalidate();
             return;
         }
@@ -193,7 +242,8 @@ public class HomeFragment extends Fragment implements CategorySelectionFragment.
         PieData data = new PieData(dataSet);
         pieChart.setData(data);
 
-        pieChart.animateY(1000, Easing.EaseInOutQuad); // Плавная анимация с ускорением и замедлением
+        // Анимация диаграммы
+        pieChart.animateY(1000, Easing.EaseInOutQuad);
 
         // Обновление диаграммы
         pieChart.invalidate();
