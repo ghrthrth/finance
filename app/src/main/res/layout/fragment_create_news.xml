@@ -1,85 +1,149 @@
-<LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/white"
     android:orientation="vertical"
     android:padding="16dp">
 
     <!-- Фильтр по дате и времени -->
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btnFilterDate"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Выбрать дату"
-        android:layout_marginBottom="16dp"/>
+        android:layout_marginStart="24dp"
+        android:layout_marginEnd="24dp"
+        android:layout_marginBottom="24dp"
+        android:backgroundTint="@color/purple_500"
+        android:elevation="4dp"
+        android:fontFamily="sans-serif-medium"
+        android:gravity="center"
+        android:paddingVertical="14dp"
+        android:text="Фильтр по дате"
+        android:textColor="@color/white"
+        android:textSize="16sp" />
 
     <!-- Фильтр по типу (доходы/расходы) -->
-    <RadioGroup
-        android:id="@+id/radioGroupFilterType"
-        android:layout_width="wrap_content"
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginBottom="16dp">
+        android:layout_marginStart="24dp"
+        android:layout_marginEnd="24dp"
+        android:layout_marginBottom="24dp"
+        android:backgroundTint="@color/white"
+        android:elevation="4dp"
+        >
 
-        <RadioButton
-            android:id="@+id/radioAll"
+        <RadioGroup
+            android:id="@+id/radioGroupFilterType"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Все"
-            android:checked="true"/>
+            android:layout_gravity="center"
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:padding="16dp">
 
-        <RadioButton
-            android:id="@+id/radioIncome"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Доходы"/>
+            <RadioButton
+                android:id="@+id/radioAll"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="16dp"
+                android:buttonTint="@color/purple_500"
+                android:checked="true"
+                android:text="Все"
+                android:textColor="@color/black" /> <!-- Отступ между кнопками -->
 
-        <RadioButton
-            android:id="@+id/radioExpense"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Расходы"/>
-    </RadioGroup>
+            <RadioButton
+                android:id="@+id/radioIncome"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="16dp"
+                android:buttonTint="@color/purple_500"
+                android:text="Доходы"
+                android:textColor="@color/black" /> <!-- Отступ между кнопками -->
+
+            <RadioButton
+                android:id="@+id/radioExpense"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:buttonTint="@color/purple_500"
+                android:text="Расходы"
+                android:textColor="@color/black" />
+        </RadioGroup>
+    </com.google.android.material.card.MaterialCardView>
+
     <!-- Общая сумма -->
-    <TextView
-        android:id="@+id/tvTotalAmount"
-        android:layout_width="wrap_content"
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Общая сумма: 0"
-        android:textSize="18sp"
-        android:layout_gravity="center_horizontal"
-        android:layout_marginBottom="24dp"/>
+        android:layout_marginBottom="24dp"
+        android:backgroundTint="@color/white">
 
-    <!-- Доходы -->
-    <TextView
-        android:id="@+id/tvIncome"
-        android:layout_width="wrap_content"
+        <TextView
+            android:id="@+id/tvTotalAmount"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:padding="16dp"
+            android:text="Общая сумма: 0"
+            android:textColor="@color/black"
+            android:textSize="18sp" />
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- Доходы и расходы -->
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Доходы: 0"
-        android:textSize="16sp"
-        android:layout_marginBottom="16dp"/>
+        android:layout_marginBottom="24dp"
+        android:orientation="horizontal"
+        android:weightSum="2">
 
-    <!-- Расходы -->
-    <TextView
-        android:id="@+id/tvExpense"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Расходы: 0"
-        android:textSize="16sp"
-        android:layout_marginBottom="16dp"/>
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
+            android:layout_weight="1">
 
+            <TextView
+                android:id="@+id/tvIncome"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:padding="16dp"
+                android:text="Доходы: 0"
+                android:textColor="@color/black"
+                android:textSize="16sp" />
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_weight="1">
+
+            <TextView
+                android:id="@+id/tvExpense"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:padding="16dp"
+                android:text="Расходы: 0"
+                android:textColor="@color/black"
+                android:textSize="16sp" />
+        </com.google.android.material.card.MaterialCardView>
+    </LinearLayout>
     <!-- История транзакций -->
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginBottom="8dp"
+        android:gravity="center"
         android:text="История транзакций:"
-        android:textSize="16sp"
-        android:layout_marginBottom="8dp"/>
+        android:textColor="@color/black"
+        android:textSize="18sp" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerViewTransactions"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="16dp"/>
+        android:layout_marginBottom="16dp" />
 
 </LinearLayout>
