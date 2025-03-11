@@ -2,11 +2,18 @@ package com.example.money.http;
 
 import android.content.Context;
 import android.os.AsyncTask;
+import android.util.Log;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.net.URLEncoder;
 import java.util.Map;
 
 import okhttp3.MediaType;
@@ -36,16 +43,12 @@ public class HttpRequestTask extends AsyncTask<Void, Void, String> {
     @Override
     protected String doInBackground(Void... voids) {
         try {
-            // Create the JSON object
             JSONObject json = new JSONObject();
             for (Map.Entry<String, String> entry : params.entrySet()) {
                 json.put(entry.getKey(), entry.getValue());
             }
 
-            // Convert the JSON object to a string
             String jsonData = json.toString();
-
-            // Create the request body
             RequestBody requestBody = RequestBody.create(MediaType.parse("application/json"), jsonData);
 
             Request.Builder requestBuilder = new Request.Builder()
@@ -68,17 +71,17 @@ public class HttpRequestTask extends AsyncTask<Void, Void, String> {
             }
 
             Request request = requestBuilder.build();
-
             OkHttpClient client = new OkHttpClient();
             Response response = client.newCall(request).execute();
 
             if (response.isSuccessful()) {
                 return response.body().string();
             } else {
+                Log.d("fewf43", "Error: " + response.code() + " " + response.message());
                 return "Error: " + response.code() + " " + response.message();
             }
         } catch (IOException | JSONException e) {
-            e.printStackTrace();
+            Log.d("43r3trf3", "Exception: ", e);
             return "Error: " + e.getMessage();
         }
     }

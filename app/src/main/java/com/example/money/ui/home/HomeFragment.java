@@ -24,6 +24,8 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.money.R;
 import com.example.money.databinding.FragmentHomeBinding;
+import com.example.money.http.HttpRequestCallback;
+import com.example.money.http.HttpRequestTask;
 import com.example.money.models.Category;
 import com.example.money.models.Transaction;
 import com.example.money.ui.category.CategorySelectionFragment;
@@ -250,19 +252,50 @@ public class HomeFragment extends Fragment implements CategorySelectionFragment.
                 // Определяем тип транзакции
                 int type = radioIncome.isChecked() ? 0 : 1;
 
-                // Добавляем транзакцию в базу данных
-                databaseHelper.addTransaction(selectedCategory, amount, selectedDate, type);
+                // Создаем параметры для отправки на сервер
+                Map<String, String> params = new HashMap<>();
+                params.put("category", selectedCategory);
+                params.put("amount", String.valueOf(amount));
+                params.put("date", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(selectedDate)); // Форматируем дату
+                params.put("type", String.valueOf(type)); // Тип транзакции (0 - доход, 1 - расход)
 
-                // Обновляем список транзакций (только для текущего типа)
-                transactions.clear();
-                transactions.addAll(databaseHelper.getTransactionsByType(currentTransactionType)); // Загружаем только текущий тип
-                adapter.notifyDataSetChanged();
+                // Создаем и выполняем задачу HTTP-запроса
+                HttpRequestTask task = new HttpRequestTask(
+                        requireContext(),
+                        "https://claimbes.store/spend_smart/api/add_transaction.php", // Укажите URL для добавления транзакции
+                        params,
+                        "POST",
+                        new HttpRequestCallback() {
+                            @Override
+                            public void onSuccess(String response) {
+                                // Обработка успешного ответа от сервера
+                                Toast.makeText(requireContext(), "Транзакция добавлена: " + response, Toast.LENGTH_SHORT).show();
 
-                // Обновляем диаграмму
-                updateChart();
+                                // Добавляем транзакцию в локальную базу данных
+                                databaseHelper.addTransaction(selectedCategory, amount, selectedDate, type);
 
-                // Закрываем BottomSheetDialog
-                bottomSheetDialog.dismiss();
+                                // Обновляем список транзакций (только для текущего типа)
+                                transactions.clear();
+                                transactions.addAll(databaseHelper.getTransactionsByType(currentTransactionType));
+                                adapter.notifyDataSetChanged();
+
+                                // Обновляем диаграмму
+                                updateChart();
+
+                                // Закрываем BottomSheetDialog
+                                bottomSheetDialog.dismiss();
+                                Log.d("testfefr", "ffergf" + response);
+                            }
+
+                            @Override
+                            public void onFailure(String error) {
+                                // Обработка ошибки
+                                Toast.makeText(requireContext(), "Ошибка: " + error, Toast.LENGTH_SHORT).show();
+                                Log.d("teewest", "ffergf" + error);
+                            }
+                        });
+
+                task.execute();
             } else {
                 Toast.makeText(requireContext(), "Введите сумму, выберите категорию и дату", Toast.LENGTH_SHORT).show();
             }
