@@ -12,12 +12,6 @@ public class Category {
         this.color = color;
     }
 
-    // Конструктор без id (для создания новой категории)
-    public Category(String name, int color) {
-        this.name = name;
-        this.color = color;
-    }
-
     // Геттеры и сеттеры
     public int getId() {
         return id;
