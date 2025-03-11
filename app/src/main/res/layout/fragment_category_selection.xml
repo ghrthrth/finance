@@ -2,6 +2,7 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="vertical"
     android:padding="16dp">
 
@@ -14,10 +15,11 @@
         android:verticalSpacing="16dp"
         android:horizontalSpacing="16dp"/>
 
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btnAddCategory"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Добавить категорию/и"
-        android:layout_marginTop="16dp"/>
+        android:layout_marginTop="16dp"
+        app:cornerRadius="24dp"/>
 </LinearLayout>

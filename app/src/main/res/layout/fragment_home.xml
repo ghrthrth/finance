@@ -35,7 +35,7 @@
         app:layout_constraintEnd_toEndOf="parent" />
 
     <!-- Кнопка добавления транзакции -->
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btnAddTransaction"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
@@ -53,7 +53,8 @@
         app:layout_constraintTop_toBottomOf="@id/pieChart"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:fontFamily="sans-serif-medium" />
+        android:fontFamily="sans-serif-medium"
+        app:cornerRadius="24dp"/>
 
     <!-- Список транзакций -->
     <androidx.recyclerview.widget.RecyclerView

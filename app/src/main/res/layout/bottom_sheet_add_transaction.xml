@@ -2,27 +2,46 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="vertical"
     android:padding="16dp">
 
-    <EditText
-        android:id="@+id/etAmount"
+    <!-- Поле ввода суммы -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/titlesEtAmount"
+        style="@style/RoundedTextInputLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Сумма"
-        android:inputType="numberDecimal"/>
+        android:layout_marginTop="16dp"
+        android:textColorHint="@color/black"
+        android:hint="Введите сумму"
+        app:boxStrokeColor="@color/box_stroke_color_selector"
+        app:boxStrokeWidth="3dp">
 
-    <Button
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etAmount"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="text"
+            android:textSize="13sp"
+            android:textColor="@color/black" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btnChooseCategory"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Выбрать категорию"/>
+        android:text="Выбрать категорию"
+        android:textSize="13sp"
+        app:cornerRadius="24dp"/>
 
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btnChooseDateTime"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Выбрать дату и время" />
+        android:text="Выбрать дату и время"
+        android:textSize="13sp"
+        app:cornerRadius="24dp"/>
 
     <TextView
         android:id="@+id/tvSelectedDateTime"
@@ -50,9 +69,11 @@
             android:text="Расход" />
     </RadioGroup>
 
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btnSave"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Сохранить"/>
+        android:text="Сохранить"
+        android:textSize="13sp"
+        app:cornerRadius="24dp"/>
 </LinearLayout>
