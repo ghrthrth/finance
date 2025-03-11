@@ -6,7 +6,6 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
-import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.Toast;
 
@@ -18,49 +17,42 @@ import com.example.money.http.HttpRequestTask;
 import java.util.HashMap;
 import java.util.Map;
 
-public class RegistrationActivity extends AppCompatActivity {
+public class LoginActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.registration_activity);
+        setContentView(R.layout.login_activity); // Создайте layout-файл login_activity.xml
 
-        Button send_reg_data = findViewById(R.id.send_reg_data);
+        Button loginButton = findViewById(R.id.login_button);
+        EditText inputLogin = findViewById(R.id.input_login);
+        EditText inputPassword = findViewById(R.id.input_password);
 
-        EditText inputName = findViewById(R.id.input_name);
-        EditText inputLogin = findViewById(R.id.input_login_reg);
-        EditText inputPassword = findViewById(R.id.input_pass_reg);
-        CheckBox agreement = findViewById(R.id.checkBox);
-
-        send_reg_data.setOnClickListener(new View.OnClickListener() {
+        Button goToRegistration = findViewById(R.id.go_to_registration);
+        goToRegistration.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                String name = inputName.getText().toString();
+                Intent intent = new Intent(LoginActivity.this, RegistrationActivity.class);
+                startActivity(intent);
+            }
+        });
+        loginButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
                 String login = inputLogin.getText().toString();
                 String password = inputPassword.getText().toString();
-                boolean isChecked = agreement.isChecked();
 
-                Button goToLogin = findViewById(R.id.go_to_login);
-                goToLogin.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        Intent intent = new Intent(RegistrationActivity.this, LoginActivity.class);
-                        startActivity(intent);
-                    }
-                });
-
-                if (name.isEmpty() || login.isEmpty() || password.isEmpty() || !isChecked) {
-                    Toast.makeText(RegistrationActivity.this, "Please fill in all the fields and check the agreement", Toast.LENGTH_SHORT).show();
+                if (login.isEmpty() || password.isEmpty()) {
+                    Toast.makeText(LoginActivity.this, "Please fill in all the fields", Toast.LENGTH_SHORT).show();
                 } else {
                     // Создаем параметры для отправки на сервер
                     Map<String, String> params = new HashMap<>();
-                    params.put("name", name);
                     params.put("login", login);
                     params.put("password", password);
 
                     // Создаем и выполняем задачу HTTP-запроса
                     HttpRequestTask task = new HttpRequestTask(
-                            RegistrationActivity.this,
-                            "https://claimbes.store/spend_smart/api/registration.php",
+                            LoginActivity.this,
+                            "https://claimbes.store/spend_smart/api/login.php", // Укажите URL для авторизации
                             params,
                             "POST",
                             new HttpRequestCallback() {
@@ -73,8 +65,8 @@ public class RegistrationActivity extends AppCompatActivity {
                                     editor.apply();
 
                                     // Переходим на MainActivity
-                                    Toast.makeText(RegistrationActivity.this, "Registration successful: " + response, Toast.LENGTH_SHORT).show();
-                                    Intent intent = new Intent(RegistrationActivity.this, MainActivity.class);
+                                    Toast.makeText(LoginActivity.this, "Login successful: " + response, Toast.LENGTH_SHORT).show();
+                                    Intent intent = new Intent(LoginActivity.this, MainActivity.class);
                                     startActivity(intent);
                                     finish();
                                 }
@@ -82,7 +74,7 @@ public class RegistrationActivity extends AppCompatActivity {
                                 @Override
                                 public void onFailure(String error) {
                                     // Обработка ошибки
-                                    Toast.makeText(RegistrationActivity.this, "Registration failed: " + error, Toast.LENGTH_SHORT).show();
+                                    Toast.makeText(LoginActivity.this, "Login failed: " + error, Toast.LENGTH_SHORT).show();
                                 }
                             });
 
@@ -91,5 +83,4 @@ public class RegistrationActivity extends AppCompatActivity {
             }
         });
     }
-
 }
