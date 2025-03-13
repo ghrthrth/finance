@@ -1,8 +1,11 @@
 package com.example.money.ui.home;
 
+import static android.content.Context.MODE_PRIVATE;
+
 import android.app.AlertDialog;
 import android.app.DatePickerDialog;
 import android.app.TimePickerDialog;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
@@ -30,6 +33,7 @@ import com.example.money.models.Category;
 import com.example.money.models.Transaction;
 import com.example.money.ui.category.CategorySelectionFragment;
 import com.example.money.utils.DatabaseHelper;
+import com.example.money.utils.NetworkUtils;
 import com.github.mikephil.charting.animation.Easing;
 import com.github.mikephil.charting.charts.PieChart;
 import com.github.mikephil.charting.data.PieData;
@@ -37,6 +41,11 @@ import com.github.mikephil.charting.data.PieDataSet;
 import com.github.mikephil.charting.data.PieEntry;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -60,6 +69,7 @@ public class HomeFragment extends Fragment implements CategorySelectionFragment.
     private String selectedCategory; // Переменная для хранения выбранной категории
     private String amountStr = ""; // Переменная для хранения введенной суммы
     private Date selectedDate; // Переменная для хранения выбранной даты и времени
+
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
@@ -90,6 +100,7 @@ public class HomeFragment extends Fragment implements CategorySelectionFragment.
         // Обработчик нажатия на заголовок "Учет расходов"
         binding.tvTitle.setOnClickListener(v -> showFunctionalitySelectionDialog());
 
+        loadTransactions();
         // Очищаем список транзакций перед загрузкой новых данных
         transactions.clear();
 
@@ -246,11 +257,21 @@ public class HomeFragment extends Fragment implements CategorySelectionFragment.
 
         btnSave.setOnClickListener(v -> {
             String amountStr = etAmount.getText().toString();
+
             if (!amountStr.isEmpty() && selectedCategory != null && selectedDate != null) {
                 double amount = Double.parseDouble(amountStr); // Преобразуем сумму в double
 
                 // Определяем тип транзакции
                 int type = radioIncome.isChecked() ? 0 : 1;
+
+                SharedPreferences sharedPreferences = requireContext().getSharedPreferences("user_prefs", MODE_PRIVATE);
+                // Проверяем, существует ли ключ "user_id"
+                if (!sharedPreferences.contains("user_id")) {
+                    Toast.makeText(requireContext(), "Ошибка: пользователь не авторизован", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                // Извлекаем user_id
+                int userId = sharedPreferences.getInt("user_id", -1); // Значение по умолчанию не будет использоваться, так как мы уже проверили наличие ключа
 
                 // Создаем параметры для отправки на сервер
                 Map<String, String> params = new HashMap<>();
@@ -258,6 +279,7 @@ public class HomeFragment extends Fragment implements CategorySelectionFragment.
                 params.put("amount", String.valueOf(amount));
                 params.put("date", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(selectedDate)); // Форматируем дату
                 params.put("type", String.valueOf(type)); // Тип транзакции (0 - доход, 1 - расход)
+                params.put("user_id", String.valueOf(userId)); // Добавляем user_id в параметры
 
                 // Создаем и выполняем задачу HTTP-запроса
                 HttpRequestTask task = new HttpRequestTask(
@@ -300,8 +322,108 @@ public class HomeFragment extends Fragment implements CategorySelectionFragment.
                 Toast.makeText(requireContext(), "Введите сумму, выберите категорию и дату", Toast.LENGTH_SHORT).show();
             }
         });
-
         bottomSheetDialog.show();
+    }
+
+
+    private void loadTransactions() {
+        // Получаем user_id из SharedPreferences
+        SharedPreferences sharedPreferences = requireContext().getSharedPreferences("user_prefs", MODE_PRIVATE);
+        if (!sharedPreferences.contains("user_id")) {
+            Toast.makeText(requireContext(), "Ошибка: пользователь не авторизован", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        int userId = sharedPreferences.getInt("user_id", -1);
+
+        // Проверяем, есть ли интернет
+        if (NetworkUtils.isOnline(requireContext())) {
+            // Если онлайн, загружаем транзакции с сервера
+            loadTransactionsFromServer(userId);
+        } else {
+            // Если оффлайн, загружаем транзакции из локальной базы данных
+            loadTransactionsFromLocalDatabase();
+        }
+    }
+
+    private void loadTransactionsFromLocalDatabase() {
+        // Очищаем текущий список транзакций
+        transactions.clear();
+
+        // Загружаем транзакции из локальной базы данных
+        transactions.addAll(databaseHelper.getAllTransactions());
+
+        // Обновляем RecyclerView
+        adapter.notifyDataSetChanged();
+
+        // Обновляем диаграмму
+        updateChart();
+
+        Log.d("LoadTransactions", "Транзакции загружены из локальной базы данных");
+    }
+
+    private void loadTransactionsFromServer(int userId) {
+        // Создаем параметры для отправки на сервер
+        Map<String, String> params = new HashMap<>();
+        params.put("user_id", String.valueOf(userId));
+
+        // Создаем и выполняем задачу HTTP-запроса
+        HttpRequestTask task = new HttpRequestTask(
+                requireContext(),
+                "https://claimbes.store/spend_smart/api/get_transactions.php", // Укажите URL для получения транзакций
+                params,
+                "GET",
+                new HttpRequestCallback() {
+                    @Override
+                    public void onSuccess(String response) {
+                        try {
+                            // Парсим JSON-ответ от сервера
+                            JSONArray jsonArray = new JSONArray(response);
+
+                            // Очищаем текущий список транзакций
+                            transactions.clear();
+
+                            // Добавляем транзакции из JSON-ответа
+                            for (int i = 0; i < jsonArray.length(); i++) {
+                                JSONObject jsonObject = jsonArray.getJSONObject(i);
+                                String category = jsonObject.getString("category");
+                                double amount = jsonObject.getDouble("amount");
+                                String dateStr = jsonObject.getString("date");
+                                int type = jsonObject.getInt("type");
+                                int id = jsonObject.getInt("id");
+
+                                // Преобразуем строку даты в объект Date
+                                SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                                Date date = format.parse(dateStr);
+
+                                // Создаем объект Transaction и добавляем его в список
+                                Transaction transaction = new Transaction(id, category, amount, date, type);
+                                transactions.add(transaction);
+
+                                // Сохраняем транзакцию в локальную базу данных
+                                databaseHelper.addTransaction(category, amount, date, type);
+                            }
+
+                            // Обновляем RecyclerView
+                            adapter.notifyDataSetChanged();
+
+                            // Обновляем диаграмму
+                            updateChart();
+
+                            Log.d("LoadTransactions", "Транзакции успешно загружены с сервера");
+                        } catch (JSONException | ParseException e) {
+                            e.printStackTrace();
+                            Toast.makeText(requireContext(), "Ошибка при загрузке транзакций", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(String error) {
+                        Toast.makeText(requireContext(), "Ошибка: " + error, Toast.LENGTH_SHORT).show();
+                        Log.e("LoadTransactions", "Ошибка: " + error);
+                    }
+                });
+
+        task.execute();
     }
 
     @Override

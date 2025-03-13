@@ -1,40 +1,43 @@
 package com.example.money.ui.create_news;
 
-import android.Manifest;
+import static android.content.Context.MODE_PRIVATE;
+
 import android.app.DatePickerDialog;
-import android.content.Intent;
-import android.content.pm.PackageManager;
-import android.net.Uri;
-import android.os.Build;
+import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.provider.MediaStore;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
-import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
-import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.money.R;
 import com.example.money.databinding.FragmentCreateNewsBinding;
+import com.example.money.http.HttpRequestCallback;
+import com.example.money.http.HttpRequestTask;
 import com.example.money.models.Transaction;
 import com.example.money.ui.home.TransactionAdapter;
 import com.example.money.utils.DatabaseHelper;
+import com.example.money.utils.NetworkUtils;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class CreateNewsFragment extends Fragment {
 
@@ -117,13 +120,106 @@ public class CreateNewsFragment extends Fragment {
         // Пересчитываем суммы доходов и расходов
         updateTotals(filteredTransactions);
     }
+
     private void loadTransactions() {
-        // Получаем все транзакции из базы данных
+        // Проверяем, есть ли интернет
+        if (NetworkUtils.isOnline(requireContext())) {
+            // Если онлайн, загружаем данные с сервера
+            loadTransactionsFromServer();
+        } else {
+            // Если оффлайн, загружаем данные из локальной базы данных
+            loadTransactionsFromLocalDatabase();
+        }
+    }
+
+    private void loadTransactionsFromServer() {
+        SharedPreferences sharedPreferences = requireContext().getSharedPreferences("user_prefs", MODE_PRIVATE);
+        // Проверяем, существует ли ключ "user_id"
+        if (!sharedPreferences.contains("user_id")) {
+            Toast.makeText(requireContext(), "Ошибка: пользователь не авторизован", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Получаем user_id из SharedPreferences
+        int userId = sharedPreferences.getInt("user_id", -1); // Значение по умолчанию не будет использоваться, так как мы уже пров
+
+        // Создаем параметры для отправки на сервер
+        Map<String, String> params = new HashMap<>();
+        params.put("user_id", String.valueOf(userId));
+
+        // Создаем и выполняем задачу HTTP-запроса
+        HttpRequestTask task = new HttpRequestTask(
+                requireContext(),
+                "https://claimbes.store/spend_smart/api/get_transactions.php", // Укажите URL для получения транзакций
+                params,
+                "GET",
+                new HttpRequestCallback() {
+                    @Override
+                    public void onSuccess(String response) {
+                        try {
+                            // Парсим JSON-ответ от сервера
+                            JSONArray jsonArray = new JSONArray(response);
+
+                            // Очищаем старые данные в локальной базе данных
+
+                            // Очищаем текущий список транзакций
+                            List<Transaction> transactions = new ArrayList<>();
+
+                            // Добавляем транзакции из JSON-ответа
+                            for (int i = 0; i < jsonArray.length(); i++) {
+                                JSONObject jsonObject = jsonArray.getJSONObject(i);
+                                String category = jsonObject.getString("category");
+                                double amount = jsonObject.getDouble("amount");
+                                String dateStr = jsonObject.getString("date");
+                                int type = jsonObject.getInt("type");
+                                int id = jsonObject.getInt("id");
+
+                                databaseHelper.clearTransactions();
+
+                                // Преобразуем строку даты в объект Date
+                                SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                                Date date = format.parse(dateStr);
+
+                                // Создаем объект Transaction и добавляем его в список
+                                Transaction transaction = new Transaction(id, category, amount, date, type);
+                                transactions.add(transaction);
+
+                                // Сохраняем транзакцию в локальную базу данных
+                                databaseHelper.addTransaction(category, amount, date, type);
+                            }
+
+                            // Обновляем адаптер
+                            transactionAdapter = new TransactionAdapter(transactions, transaction -> {
+                                Toast.makeText(requireContext(), "Выбрана транзакция: " + transaction.getCategory(), Toast.LENGTH_SHORT).show();
+                            });
+                            recyclerViewTransactions.setAdapter(transactionAdapter);
+
+                            // Пересчитываем суммы доходов и расходов
+                            updateTotals(transactions);
+
+                            Log.d("LoadTransactions", "Транзакции успешно загружены с сервера и обновлены в локальной БД");
+                        } catch (JSONException | ParseException e) {
+                            e.printStackTrace();
+                            Toast.makeText(requireContext(), "Ошибка при загрузке транзакций", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(String error) {
+                        Toast.makeText(requireContext(), "Ошибка: " + error, Toast.LENGTH_SHORT).show();
+                        Log.e("LoadTransactions", "Ошибка: " + error);
+                    }
+                });
+
+        task.execute();
+    }
+
+    private void loadTransactionsFromLocalDatabase() {
+        // Получаем все транзакции из локальной базы данных
         List<Transaction> allTransactions = databaseHelper.getAllTransactions();
 
         // Обновляем адаптер
         transactionAdapter = new TransactionAdapter(allTransactions, transaction -> {
-            // Обработка нажатия на элемент списка
             Toast.makeText(requireContext(), "Выбрана транзакция: " + transaction.getCategory(), Toast.LENGTH_SHORT).show();
         });
         recyclerViewTransactions.setAdapter(transactionAdapter);
@@ -150,7 +246,6 @@ public class CreateNewsFragment extends Fragment {
         return filteredTransactions;
     }
 
-    // Метод для проверки, совпадает ли дата транзакции с выбранной датой
     private boolean isSameDay(Date date1, Date date2) {
         Calendar cal1 = Calendar.getInstance();
         cal1.setTime(date1);
@@ -162,6 +257,7 @@ public class CreateNewsFragment extends Fragment {
                 cal1.get(Calendar.MONTH) == cal2.get(Calendar.MONTH) &&
                 cal1.get(Calendar.DAY_OF_MONTH) == cal2.get(Calendar.DAY_OF_MONTH);
     }
+
     private void updateTotals(List<Transaction> transactions) {
         double totalIncome = 0;
         double totalExpense = 0;

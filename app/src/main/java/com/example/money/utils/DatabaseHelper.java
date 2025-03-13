@@ -213,6 +213,11 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         db.close();
         return color;
     }
+    public void clearTransactions() {
+        SQLiteDatabase db = this.getWritableDatabase();
+        db.delete(TABLE_TRANSACTIONS, null, null); // Удаляем все записи из таблицы
+        db.close();
+    }
 
     private List<Transaction> filterTransactions(List<Transaction> transactions, Date selectedDate, int filterType) {
         List<Transaction> filteredTransactions = new ArrayList<>();
