@@ -9,6 +9,7 @@ public class Transaction {
     private Date date; // Новое поле для даты и времени
 
     private int type; // "income" или "expense"
+    private int synced;
 
     public Transaction(int id, String category, double amount, Date date, int type) {
         this.id = id;
@@ -18,7 +19,7 @@ public class Transaction {
         this.type = type;
     }
 
-    public int getId() {
+    public long getId() {
         return id;
     }
 
@@ -36,5 +37,13 @@ public class Transaction {
 
     public int getType() {
         return type;
+    }
+
+    public int getSynced() {
+        return synced;
+    }
+
+    public void setSynced(int synced) {
+        this.synced = synced;
     }
 }

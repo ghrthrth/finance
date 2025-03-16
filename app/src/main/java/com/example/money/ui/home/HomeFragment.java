@@ -80,12 +80,6 @@ public class HomeFragment extends Fragment implements CategorySelectionFragment.
 
         binding = FragmentHomeBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
-
-        if (NetworkUtils.isNetworkAvailable(requireContext())) {
-            Intent syncIntent = new Intent(requireContext(), SyncService.class);
-            requireContext().startService(syncIntent);
-        }
-
         // Инициализация DatabaseHelper
         databaseHelper = new DatabaseHelper(requireContext());
 

@@ -9,9 +9,11 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 
 import com.example.money.databinding.ActivityMainBinding;
+import com.example.money.services.SyncService;
 import com.example.money.ui.create_news.CreateNewsFragment;
 import com.example.money.ui.home.HomeFragment;
 import com.example.money.ui.slideshow.SlideshowFragment;
+import com.example.money.utils.NetworkUtils;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.util.HashMap;
@@ -28,6 +30,10 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
+        // Запуск синхронизации при входе в приложение
+        if (NetworkUtils.isNetworkAvailable(this)) {
+            SyncService.startSync(this);
+        }
 
         setupFragments();
         setupBottomNavigation();
