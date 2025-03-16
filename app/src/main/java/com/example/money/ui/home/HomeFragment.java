@@ -5,6 +5,7 @@ import static android.content.Context.MODE_PRIVATE;
 import android.app.AlertDialog;
 import android.app.DatePickerDialog;
 import android.app.TimePickerDialog;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Bundle;
@@ -31,6 +32,7 @@ import com.example.money.http.HttpRequestCallback;
 import com.example.money.http.HttpRequestTask;
 import com.example.money.models.Category;
 import com.example.money.models.Transaction;
+import com.example.money.services.SyncService;
 import com.example.money.ui.category.CategorySelectionFragment;
 import com.example.money.utils.DatabaseHelper;
 import com.example.money.utils.NetworkUtils;
@@ -79,6 +81,11 @@ public class HomeFragment extends Fragment implements CategorySelectionFragment.
         binding = FragmentHomeBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
 
+        if (NetworkUtils.isNetworkAvailable(requireContext())) {
+            Intent syncIntent = new Intent(requireContext(), SyncService.class);
+            requireContext().startService(syncIntent);
+        }
+
         // Инициализация DatabaseHelper
         databaseHelper = new DatabaseHelper(requireContext());
 
@@ -114,6 +121,7 @@ public class HomeFragment extends Fragment implements CategorySelectionFragment.
 
         return root;
     }
+
     private void showFunctionalitySelectionDialog() {
         BottomSheetDialog bottomSheetDialog = new BottomSheetDialog(requireContext());
         View bottomSheetView = LayoutInflater.from(requireContext()).inflate(R.layout.bottom_sheet_functionality_selection, null);
@@ -152,6 +160,7 @@ public class HomeFragment extends Fragment implements CategorySelectionFragment.
         updateChart();
         Toast.makeText(requireContext(), "Загружены расходы", Toast.LENGTH_SHORT).show();
     }
+
     @Override
     public void onItemClick(Transaction transaction) {
         // Показываем диалог подтверждения удаления
@@ -264,251 +273,130 @@ public class HomeFragment extends Fragment implements CategorySelectionFragment.
                 // Определяем тип транзакции
                 int type = radioIncome.isChecked() ? 0 : 1;
 
-                SharedPreferences sharedPreferences = requireContext().getSharedPreferences("user_prefs", MODE_PRIVATE);
-                // Проверяем, существует ли ключ "user_id"
-                if (!sharedPreferences.contains("user_id")) {
-                    Toast.makeText(requireContext(), "Ошибка: пользователь не авторизован", Toast.LENGTH_SHORT).show();
-                    return;
-                }
-                // Извлекаем user_id
-                int userId = sharedPreferences.getInt("user_id", -1); // Значение по умолчанию не будет использоваться, так как мы уже проверили наличие ключа
+                // Добавляем транзакцию в локальную базу данных
+                databaseHelper.addTransaction(selectedCategory, amount, selectedDate, type);
 
-                // Создаем параметры для отправки на сервер
-                Map<String, String> params = new HashMap<>();
-                params.put("category", selectedCategory);
-                params.put("amount", String.valueOf(amount));
-                params.put("date", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(selectedDate)); // Форматируем дату
-                params.put("type", String.valueOf(type)); // Тип транзакции (0 - доход, 1 - расход)
-                params.put("user_id", String.valueOf(userId)); // Добавляем user_id в параметры
+                // Обновляем список транзакций (только для текущего типа)
+                transactions.clear();
+                transactions.addAll(databaseHelper.getTransactionsByType(currentTransactionType));
+                adapter.notifyDataSetChanged();
 
-                // Создаем и выполняем задачу HTTP-запроса
-                HttpRequestTask task = new HttpRequestTask(
-                        requireContext(),
-                        "https://claimbes.store/spend_smart/api/add_transaction.php", // Укажите URL для добавления транзакции
-                        params,
-                        "POST",
-                        new HttpRequestCallback() {
-                            @Override
-                            public void onSuccess(String response) {
-                                // Обработка успешного ответа от сервера
-                                Toast.makeText(requireContext(), "Транзакция добавлена: " + response, Toast.LENGTH_SHORT).show();
+                // Обновляем диаграмму
+                updateChart();
 
-                                // Добавляем транзакцию в локальную базу данных
-                                databaseHelper.addTransaction(selectedCategory, amount, selectedDate, type);
-
-                                // Обновляем список транзакций (только для текущего типа)
-                                transactions.clear();
-                                transactions.addAll(databaseHelper.getTransactionsByType(currentTransactionType));
-                                adapter.notifyDataSetChanged();
-
-                                // Обновляем диаграмму
-                                updateChart();
-
-                                // Закрываем BottomSheetDialog
-                                bottomSheetDialog.dismiss();
-                                Log.d("testfefr", "ffergf" + response);
-                            }
-
-                            @Override
-                            public void onFailure(String error) {
-                                // Обработка ошибки
-                                Toast.makeText(requireContext(), "Ошибка: " + error, Toast.LENGTH_SHORT).show();
-                                Log.d("teewest", "ffergf" + error);
-                            }
-                        });
-
-                task.execute();
+                // Закрываем BottomSheetDialog
+                bottomSheetDialog.dismiss();
             } else {
-                Toast.makeText(requireContext(), "Введите сумму, выберите категорию и дату", Toast.LENGTH_SHORT).show();
+                Toast.makeText(requireContext(), "Заполните все поля", Toast.LENGTH_SHORT).show();
             }
         });
         bottomSheetDialog.show();
     }
-
-
-    private void loadTransactions() {
-        // Получаем user_id из SharedPreferences
-        SharedPreferences sharedPreferences = requireContext().getSharedPreferences("user_prefs", MODE_PRIVATE);
-        if (!sharedPreferences.contains("user_id")) {
-            Toast.makeText(requireContext(), "Ошибка: пользователь не авторизован", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        int userId = sharedPreferences.getInt("user_id", -1);
-
-        // Проверяем, есть ли интернет
-        if (NetworkUtils.isOnline(requireContext())) {
-            // Если онлайн, загружаем транзакции с сервера
-            loadTransactionsFromServer(userId);
-        } else {
-            // Если оффлайн, загружаем транзакции из локальной базы данных
+        private void loadTransactions () {
             loadTransactionsFromLocalDatabase();
         }
-    }
 
-    private void loadTransactionsFromLocalDatabase() {
-        // Очищаем текущий список транзакций
-        transactions.clear();
+        private void loadTransactionsFromLocalDatabase () {
+            // Очищаем текущий список транзакций
+            transactions.clear();
 
-        // Загружаем транзакции из локальной базы данных
-        transactions.addAll(databaseHelper.getAllTransactions());
+            // Загружаем транзакции из локальной базы данных
+            transactions.addAll(databaseHelper.getAllTransactions());
 
-        // Обновляем RecyclerView
-        adapter.notifyDataSetChanged();
+            // Обновляем RecyclerView
+            adapter.notifyDataSetChanged();
 
-        // Обновляем диаграмму
-        updateChart();
+            // Обновляем диаграмму
+            updateChart();
 
-        Log.d("LoadTransactions", "Транзакции загружены из локальной базы данных");
-    }
-
-    private void loadTransactionsFromServer(int userId) {
-        // Создаем параметры для отправки на сервер
-        Map<String, String> params = new HashMap<>();
-        params.put("user_id", String.valueOf(userId));
-
-        // Создаем и выполняем задачу HTTP-запроса
-        HttpRequestTask task = new HttpRequestTask(
-                requireContext(),
-                "https://claimbes.store/spend_smart/api/get_transactions.php", // Укажите URL для получения транзакций
-                params,
-                "GET",
-                new HttpRequestCallback() {
-                    @Override
-                    public void onSuccess(String response) {
-                        try {
-                            // Парсим JSON-ответ от сервера
-                            JSONArray jsonArray = new JSONArray(response);
-
-                            // Очищаем текущий список транзакций
-                            transactions.clear();
-
-                            // Добавляем транзакции из JSON-ответа
-                            for (int i = 0; i < jsonArray.length(); i++) {
-                                JSONObject jsonObject = jsonArray.getJSONObject(i);
-                                String category = jsonObject.getString("category");
-                                double amount = jsonObject.getDouble("amount");
-                                String dateStr = jsonObject.getString("date");
-                                int type = jsonObject.getInt("type");
-                                int id = jsonObject.getInt("id");
-
-                                // Преобразуем строку даты в объект Date
-                                SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-                                Date date = format.parse(dateStr);
-
-                                // Создаем объект Transaction и добавляем его в список
-                                Transaction transaction = new Transaction(id, category, amount, date, type);
-                                transactions.add(transaction);
-
-                                // Сохраняем транзакцию в локальную базу данных
-                                databaseHelper.addTransaction(category, amount, date, type);
-                            }
-
-                            // Обновляем RecyclerView
-                            adapter.notifyDataSetChanged();
-
-                            // Обновляем диаграмму
-                            updateChart();
-
-                            Log.d("LoadTransactions", "Транзакции успешно загружены с сервера");
-                        } catch (JSONException | ParseException e) {
-                            e.printStackTrace();
-                            Toast.makeText(requireContext(), "Ошибка при загрузке транзакций", Toast.LENGTH_SHORT).show();
-                        }
-                    }
-
-                    @Override
-                    public void onFailure(String error) {
-                        Toast.makeText(requireContext(), "Ошибка: " + error, Toast.LENGTH_SHORT).show();
-                        Log.e("LoadTransactions", "Ошибка: " + error);
-                    }
-                });
-
-        task.execute();
-    }
-
-    @Override
-    public void onCategorySelected(String category) {
-        this.selectedCategory = category; // Сохраняем выбранную категорию
-        Log.d("HomeFragment", "Выбрана категория: " + category);
-        Toast.makeText(requireContext(), "Выбрана категория: " + category, Toast.LENGTH_SHORT).show();
-
-        // Показываем BottomSheetDialog снова
-        showBottomSheetDialog();
-    }
-
-    private void updateChart() {
-        List<Transaction> transactions = databaseHelper.getTransactionsByType(currentTransactionType);
-        Map<String, Float> dataMap = new HashMap<>();
-        Map<String, Integer> colorMap = new HashMap<>(); // Для хранения цветов категорий
-
-        // Получаем все категории с их цветами
-        List<Category> categories = databaseHelper.getAllCategories();
-        for (Category category : categories) {
-            colorMap.put(category.getName(), category.getColor()); // Сохраняем цвета
+            Log.d("LoadTransactions", "Транзакции загружены из локальной базы данных");
         }
 
-        // Суммируем суммы по категориям
-        for (Transaction transaction : transactions) {
-            String category = transaction.getCategory();
-            float amount = (float) transaction.getAmount();
-            dataMap.put(category, dataMap.getOrDefault(category, 0f) + amount);
+
+        @Override
+        public void onCategorySelected (String category){
+            this.selectedCategory = category; // Сохраняем выбранную категорию
+            Log.d("HomeFragment", "Выбрана категория: " + category);
+            Toast.makeText(requireContext(), "Выбрана категория: " + category, Toast.LENGTH_SHORT).show();
+
+            // Показываем BottomSheetDialog снова
+            showBottomSheetDialog();
         }
 
-        // Подготавливаем данные для диаграммы
-        List<PieEntry> entries = new ArrayList<>();
-        List<Integer> colors = new ArrayList<>(); // Список цветов для каждой категории
+        private void updateChart () {
+            List<Transaction> transactions = databaseHelper.getTransactionsByType(currentTransactionType);
+            Map<String, Float> dataMap = new HashMap<>();
+            Map<String, Integer> colorMap = new HashMap<>(); // Для хранения цветов категорий
 
-        for (Map.Entry<String, Float> entry : dataMap.entrySet()) {
-            String category = entry.getKey();
-            Integer color = colorMap.get(category);
-            if (color != null) {
-                entries.add(new PieEntry(entry.getValue(), category));
-                colors.add(color); // Добавляем цвет категории
+            // Получаем все категории с их цветами
+            List<Category> categories = databaseHelper.getAllCategories();
+            for (Category category : categories) {
+                colorMap.put(category.getName(), category.getColor()); // Сохраняем цвета
             }
+
+            // Суммируем суммы по категориям
+            for (Transaction transaction : transactions) {
+                String category = transaction.getCategory();
+                float amount = (float) transaction.getAmount();
+                dataMap.put(category, dataMap.getOrDefault(category, 0f) + amount);
+            }
+
+            // Подготавливаем данные для диаграммы
+            List<PieEntry> entries = new ArrayList<>();
+            List<Integer> colors = new ArrayList<>(); // Список цветов для каждой категории
+
+            for (Map.Entry<String, Float> entry : dataMap.entrySet()) {
+                String category = entry.getKey();
+                Integer color = colorMap.get(category);
+                if (color != null) {
+                    entries.add(new PieEntry(entry.getValue(), category));
+                    colors.add(color); // Добавляем цвет категории
+                }
+            }
+
+            // Обновляем график
+            updatePieChart(entries, colors, currentTransactionType == 0 ? "Доходы" : "Расходы");
         }
 
-        // Обновляем график
-        updatePieChart(entries, colors, currentTransactionType == 0 ? "Доходы" : "Расходы");
-    }
+        public void setTransactionType ( int type){
+            this.currentTransactionType = type; // Устанавливаем тип (0 - доходы, 1 - расходы)
 
-    public void setTransactionType(int type) {
-        this.currentTransactionType = type; // Устанавливаем тип (0 - доходы, 1 - расходы)
+            if (type == 0) {
+                loadIncomeFunctionality(); // Загружаем доходы
+                binding.tvTitle.setText("Учет доходов"); // Обновляем заголовок
+            } else {
+                loadExpenseFunctionality(); // Загружаем расходы
+                binding.tvTitle.setText("Учет расходов"); // Обновляем заголовок
+            }
 
-        if (type == 0) {
-            loadIncomeFunctionality(); // Загружаем доходы
-            binding.tvTitle.setText("Учет доходов"); // Обновляем заголовок
-        } else {
-            loadExpenseFunctionality(); // Загружаем расходы
-            binding.tvTitle.setText("Учет расходов"); // Обновляем заголовок
+            updateChart(); // Обновляем график
         }
+        private void updatePieChart (List < PieEntry > entries, List < Integer > colors, String
+        label){
+            if (entries == null || entries.isEmpty() || colors == null || colors.isEmpty()) {
+                pieChart.clear();
+                pieChart.setVisibility(View.GONE);
+                pieChart.invalidate();
+                return;
+            }
 
-        updateChart(); // Обновляем график
-    }
-    private void updatePieChart(List<PieEntry> entries, List<Integer> colors, String label) {
-        if (entries == null || entries.isEmpty() || colors == null || colors.isEmpty()) {
-            pieChart.clear();
-            pieChart.setVisibility(View.GONE);
+            pieChart.setVisibility(View.VISIBLE);
+
+            PieDataSet dataSet = new PieDataSet(entries, label);
+            dataSet.setColors(colors); // Устанавливаем цвета для каждой категории
+            dataSet.setValueTextSize(12f);
+            dataSet.setValueTextColor(Color.BLACK);
+
+            PieData data = new PieData(dataSet);
+            pieChart.setData(data);
+
+            pieChart.animateY(1000, Easing.EaseInOutQuad);
             pieChart.invalidate();
-            return;
         }
 
-        pieChart.setVisibility(View.VISIBLE);
-
-        PieDataSet dataSet = new PieDataSet(entries, label);
-        dataSet.setColors(colors); // Устанавливаем цвета для каждой категории
-        dataSet.setValueTextSize(12f);
-        dataSet.setValueTextColor(Color.BLACK);
-
-        PieData data = new PieData(dataSet);
-        pieChart.setData(data);
-
-        pieChart.animateY(1000, Easing.EaseInOutQuad);
-        pieChart.invalidate();
+        @Override
+        public void onDestroyView () {
+            super.onDestroyView();
+            binding = null;
+        }
     }
-
-    @Override
-    public void onDestroyView() {
-        super.onDestroyView();
-        binding = null;
-    }
-}

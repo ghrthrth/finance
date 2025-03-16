@@ -20,7 +20,7 @@ import java.util.Random;
 public class DatabaseHelper extends SQLiteOpenHelper {
 
     private static final String DATABASE_NAME = "money.db";
-    private static final int DATABASE_VERSION = 5; // Увеличиваем версию базы данных
+    private static final int DATABASE_VERSION = 6; // Увеличиваем версию базы данных
 
     // Таблица категорий
     private static final String TABLE_CATEGORIES = "categories";
@@ -36,44 +36,31 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String COLUMN_TRANSACTION_DATE = "date"; // Поле для даты и времени
     private static final String COLUMN_TRANSACTION_TYPE = "type"; // Поле для типа транзакции (доход/расход)
 
+    private static final String COLUMN_TRANSACTION_SYNCED = "synced"; // Поле для типа транзакции (доход/расход)
+
     public DatabaseHelper(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
     }
 
     @Override
     public void onCreate(SQLiteDatabase db) {
-        // Создание таблицы категорий
-        String CREATE_CATEGORIES_TABLE = "CREATE TABLE " + TABLE_CATEGORIES + "("
-                + COLUMN_CATEGORY_ID + " INTEGER PRIMARY KEY AUTOINCREMENT,"
-                + COLUMN_CATEGORY_NAME + " TEXT UNIQUE,"
-                + COLUMN_CATEGORY_COLOR + " INTEGER)"; // Новое поле для цвета
-        db.execSQL(CREATE_CATEGORIES_TABLE);
-
-        // Создание таблицы транзакций
         String CREATE_TRANSACTIONS_TABLE = "CREATE TABLE " + TABLE_TRANSACTIONS + "("
                 + COLUMN_TRANSACTION_ID + " INTEGER PRIMARY KEY AUTOINCREMENT,"
                 + COLUMN_TRANSACTION_CATEGORY + " TEXT,"
                 + COLUMN_TRANSACTION_AMOUNT + " REAL,"
                 + COLUMN_TRANSACTION_DATE + " INTEGER,"
-                + COLUMN_TRANSACTION_TYPE + " INTEGER)"; // Поле для типа транзакции
+                + COLUMN_TRANSACTION_TYPE + " INTEGER,"
+                + COLUMN_TRANSACTION_SYNCED + " INTEGER DEFAULT 0)"; // По умолчанию не синхронизировано
         db.execSQL(CREATE_TRANSACTIONS_TABLE);
-
-        Log.d("DatabaseHelper", "Таблица categories создана");
     }
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        Log.d("DatabaseHelper", "Обновление базы данных с версии " + oldVersion + " до " + newVersion);
-
-        if (oldVersion < 4) {
-            db.execSQL("ALTER TABLE " + TABLE_TRANSACTIONS + " ADD COLUMN " + COLUMN_TRANSACTION_TYPE + " INTEGER DEFAULT 0");
-            Log.d("DatabaseHelper", "Добавлен столбец " + COLUMN_TRANSACTION_TYPE);
-        }
-        if (oldVersion < 5) {
-            db.execSQL("ALTER TABLE " + TABLE_CATEGORIES + " ADD COLUMN " + COLUMN_CATEGORY_COLOR + " INTEGER DEFAULT " + Color.GRAY);
-            Log.d("DatabaseHelper", "Добавлен столбец " + COLUMN_CATEGORY_COLOR);
+        if (oldVersion < 6) {
+            db.execSQL("ALTER TABLE " + TABLE_TRANSACTIONS + " ADD COLUMN " + COLUMN_TRANSACTION_SYNCED + " INTEGER DEFAULT 0");
         }
     }
+
 
     // Метод для добавления категории с генерацией случайного цвета
     public void addCategory(String category) {
@@ -125,14 +112,46 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     }
 
     // Метод для добавления транзакции с датой, временем и типом
-    public void addTransaction(String category, double amount, Date date, int type) {
+    public long addTransaction(String category, double amount, Date date, int type) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
         values.put(COLUMN_TRANSACTION_CATEGORY, category);
         values.put(COLUMN_TRANSACTION_AMOUNT, amount);
         values.put(COLUMN_TRANSACTION_DATE, date.getTime());
         values.put(COLUMN_TRANSACTION_TYPE, type);
-        db.insert(TABLE_TRANSACTIONS, null, values);
+        values.put(COLUMN_TRANSACTION_SYNCED, 0); // По умолчанию не синхронизировано
+        long id = db.insert(TABLE_TRANSACTIONS, null, values);
+        db.close();
+        return id;
+    }
+
+    // Получение всех несинхронизированных транзакций
+    public List<Transaction> getUnsyncedTransactions() {
+        List<Transaction> transactions = new ArrayList<>();
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.rawQuery("SELECT * FROM " + TABLE_TRANSACTIONS + " WHERE " + COLUMN_TRANSACTION_SYNCED + " = 0", null);
+
+        if (cursor.moveToFirst()) {
+            do {
+                int id = cursor.getInt(0);
+                String category = cursor.getString(1);
+                double amount = cursor.getDouble(2);
+                long dateMillis = cursor.getLong(3);
+                int type = cursor.getInt(4);
+                Date date = new Date(dateMillis);
+                transactions.add(new Transaction(id, category, amount, date, type));
+            } while (cursor.moveToNext());
+        }
+        cursor.close();
+        db.close();
+        return transactions;
+    }
+
+    public void markTransactionAsSynced(long transactionId) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(COLUMN_TRANSACTION_SYNCED, 1);
+        db.update(TABLE_TRANSACTIONS, values, COLUMN_TRANSACTION_ID + " = ?", new String[]{String.valueOf(transactionId)});
         db.close();
     }
 
