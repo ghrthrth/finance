@@ -112,7 +112,7 @@ public class CategorySelectionFragment extends Fragment {
         builder.setPositiveButton("Добавить", (dialog, which) -> {
             String categoryName = input.getText().toString().trim();
             if (!categoryName.isEmpty()) {
-                databaseHelper.addCategory(categoryName); // Добавляем категорию в базу данных
+                databaseHelper.addCategory(categoryName); // Используем метод с автоматической генерацией цвета
                 categories.clear();
                 categories.addAll(databaseHelper.getAllCategories()); // Обновляем список категорий
                 adapter.notifyDataSetChanged(); // Обновляем GridView

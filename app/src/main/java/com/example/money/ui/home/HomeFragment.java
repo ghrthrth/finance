@@ -116,6 +116,8 @@ public class HomeFragment extends Fragment implements CategorySelectionFragment.
         return root;
     }
 
+
+
     private void showFunctionalitySelectionDialog() {
         BottomSheetDialog bottomSheetDialog = new BottomSheetDialog(requireContext());
         View bottomSheetView = LayoutInflater.from(requireContext()).inflate(R.layout.bottom_sheet_functionality_selection, null);

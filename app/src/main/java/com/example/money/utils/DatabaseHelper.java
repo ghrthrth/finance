@@ -70,12 +70,22 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         }
     }
 
-    // Метод для добавления категории с генерацией случайного цвета
+    // Метод для добавления категории с автоматической генерацией цвета
     public void addCategory(String category) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
         values.put(COLUMN_CATEGORY_NAME, category);
         values.put(COLUMN_CATEGORY_COLOR, generateRandomColor()); // Генерация случайного цвета
+        db.insert(TABLE_CATEGORIES, null, values);
+        db.close();
+    }
+
+    // Метод для добавления категории с указанием цвета
+    public void addCategory(String category, int color) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(COLUMN_CATEGORY_NAME, category);
+        values.put(COLUMN_CATEGORY_COLOR, color); // Используем переданный цвет
         db.insert(TABLE_CATEGORIES, null, values);
         db.close();
     }
