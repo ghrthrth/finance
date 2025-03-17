@@ -15,11 +15,14 @@ import androidx.appcompat.app.AppCompatDelegate;
 import androidx.fragment.app.Fragment;
 
 import com.example.money.MainActivity;
+import com.example.money.R;
 import com.example.money.databinding.FragmentSettingsBinding;
 
 public class SettingsFragment extends Fragment {
 
     private FragmentSettingsBinding binding;
+    public static final String THEME_PREFERENCE = "theme_preference";
+    public static final String THEME_KEY = "current_theme";
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
@@ -37,24 +40,20 @@ public class SettingsFragment extends Fragment {
     }
 
     private void changeTheme() {
-        // Получаем текущую тему
-        int currentThemeMode = AppCompatDelegate.getDefaultNightMode();
+        SharedPreferences preferences = getActivity().getSharedPreferences(THEME_PREFERENCE, Context.MODE_PRIVATE);
+        String currentTheme = preferences.getString(THEME_KEY, "Default");
 
-        // Определяем новую тему
-        int newThemeMode;
-        if (currentThemeMode == AppCompatDelegate.MODE_NIGHT_YES) {
-            newThemeMode = AppCompatDelegate.MODE_NIGHT_NO; // Переключаем на светлую тему
+        String newTheme;
+        if (currentTheme.equals("Default")) {
+            newTheme = "Green";
         } else {
-            newThemeMode = AppCompatDelegate.MODE_NIGHT_YES; // Переключаем на темную тему
+            newTheme = "Default";
         }
 
-        // Сохраняем новую тему
-        saveTheme(newThemeMode);
+        saveTheme(newTheme);
+        applyTheme(newTheme);
 
-        // Применяем новую тему
-        AppCompatDelegate.setDefaultNightMode(newThemeMode);
-
-        // Перезапуск активности для применения изменений с анимацией
+        // Перезапуск всех активностей
         Intent intent = new Intent(getActivity(), MainActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
         startActivity(intent);
@@ -62,19 +61,41 @@ public class SettingsFragment extends Fragment {
         getActivity().finish();
     }
 
-    private void saveTheme(int themeMode) {
-        SharedPreferences preferences = getActivity().getSharedPreferences("settings", Context.MODE_PRIVATE);
+    private void saveTheme(String theme) {
+        SharedPreferences preferences = getActivity().getSharedPreferences(THEME_PREFERENCE, Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = preferences.edit();
-        editor.putInt("theme", themeMode);
+        editor.putString(THEME_KEY, theme);
         editor.apply();
     }
 
+    private void applyTheme(String theme) {
+        SharedPreferences preferences = getActivity().getSharedPreferences(THEME_PREFERENCE, Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = preferences.edit();
+
+        switch (theme) {
+            case "Green":
+                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO); // Светлая тема
+                editor.putString(THEME_KEY, "Green");
+                editor.apply();
+                getActivity().setTheme(R.style.AppTheme_Green); // Применяем кастомную тему
+                break;
+            default:
+                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO); // Светлая тема
+                editor.putString(THEME_KEY, "Default");
+                editor.apply();
+                getActivity().setTheme(R.style.Theme_Money); // Применяем стандартную тему
+                break;
+        }
+    }
+
     private void updateButtonText(Button button) {
-        int currentThemeMode = AppCompatDelegate.getDefaultNightMode();
-        if (currentThemeMode == AppCompatDelegate.MODE_NIGHT_YES) {
-            button.setText("Включить светлую тему");
+        SharedPreferences preferences = getActivity().getSharedPreferences(THEME_PREFERENCE, Context.MODE_PRIVATE);
+        String currentTheme = preferences.getString(THEME_KEY, "Default");
+
+        if (currentTheme.equals("Green")) {
+            button.setText("Включить стандартную тему");
         } else {
-            button.setText("Включить темную тему");
+            button.setText("Включить зеленую тему");
         }
     }
 

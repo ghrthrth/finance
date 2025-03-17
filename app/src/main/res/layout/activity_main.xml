@@ -28,6 +28,6 @@
         android:layout_alignParentEnd="true"
         android:layout_margin="16dp"
         android:src="@drawable/ic_menu_gallery"
-        app:backgroundTint="@color/purple_500"
+        app:backgroundTint="?attr/colorPrimary"
         app:tint="@color/white" />
 </RelativeLayout>

@@ -1,5 +1,8 @@
 package com.example.money;
 
+import static com.example.money.ui.settings.SettingsFragment.THEME_KEY;
+import static com.example.money.ui.settings.SettingsFragment.THEME_PREFERENCE;
+
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -31,6 +34,7 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        applySavedTheme(); // Применяем тему до setContentView
         super.onCreate(savedInstanceState);
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
@@ -66,7 +70,16 @@ public class MainActivity extends AppCompatActivity {
             loadFragment(new CreateNewsFragment());
         }
     }
+    private void applySavedTheme() {
+        SharedPreferences preferences = getSharedPreferences(THEME_PREFERENCE, MODE_PRIVATE);
+        String currentTheme = preferences.getString(THEME_KEY, "Default");
 
+        if (currentTheme.equals("Green")) {
+            setTheme(R.style.AppTheme_Green);
+        } else {
+            setTheme(R.style.Theme_Money);
+        }
+    }
     private void loadSettings() {
         SharedPreferences preferences = this.getSharedPreferences("settings", Context.MODE_PRIVATE);
         int theme = preferences.getInt("theme", AppCompatDelegate.MODE_NIGHT_NO);

@@ -122,7 +122,7 @@
                     app:layout_constraintTop_toBottomOf="@id/selectPhoto"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"
-                    android:backgroundTint="@color/primaryColor"
+                    app:backgroundTint="?attr/colorPrimary"
                     app:cornerRadius="12dp"
                     android:textColor="@color/white" />
 

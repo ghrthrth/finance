@@ -14,13 +14,13 @@
         android:layout_marginStart="24dp"
         android:layout_marginEnd="24dp"
         android:layout_marginBottom="24dp"
-        android:backgroundTint="@color/purple_500"
         android:elevation="4dp"
         android:fontFamily="sans-serif-medium"
         android:gravity="center"
         android:paddingVertical="14dp"
         android:text="Фильтр по дате"
-        android:textColor="@color/white"
+        style="@style/ButtonStyle"
+        android:textColor="?attr/colorOnPrimary"
         android:textSize="16sp"
         app:cornerRadius="24dp"/>
 
@@ -49,27 +49,27 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="16dp"
-                android:buttonTint="@color/purple_500"
                 android:checked="true"
                 android:text="Все"
-                android:textColor="@color/black" /> <!-- Отступ между кнопками -->
+                style="@style/RadioButton"
+                 /> <!-- Отступ между кнопками -->
 
             <RadioButton
                 android:id="@+id/radioIncome"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="16dp"
-                android:buttonTint="@color/purple_500"
                 android:text="Доходы"
-                android:textColor="@color/black" /> <!-- Отступ между кнопками -->
+                style="@style/RadioButton"
+                 /> <!-- Отступ между кнопками -->
 
             <RadioButton
                 android:id="@+id/radioExpense"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:buttonTint="@color/purple_500"
                 android:text="Расходы"
-                android:textColor="@color/black" />
+                style="@style/RadioButton"
+                />
         </RadioGroup>
     </com.google.android.material.card.MaterialCardView>
 

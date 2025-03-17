@@ -3,7 +3,7 @@
     <style name="Theme.Money" parent="Theme.MaterialComponents.DayNight.DarkActionBar">
         <!-- Primary brand color. -->
         <item name="colorPrimary">@color/purple_500</item>
-        <item name="colorPrimaryVariant">@color/purple_500</item>
+        <item name="colorPrimaryVariant">@color/black</item>
         <item name="colorOnPrimary">@color/white</item>
         <!-- Secondary brand color. -->
         <item name="colorSecondary">@color/teal_200</item>
@@ -14,12 +14,14 @@
         <!-- Customize your theme here. -->
     </style>
 
-    <style name="Theme.Money.NoActionBar">
-        <item name="windowActionBar">false</item>
-        <item name="windowNoTitle">true</item>
+    <style name="AppTheme_Green" parent="Theme.MaterialComponents.DayNight.DarkActionBar">
+        <item name="colorPrimary">@color/greenPrimary</item>
+        <item name="colorPrimaryVariant">@color/greenPrimaryDark</item>
+        <item name="colorOnPrimary">@color/white</item>
+        <item name="colorSecondary">@color/greenAccent</item>
+        <item name="colorSecondaryVariant">@color/greenAccent</item>
+        <item name="colorOnSecondary">@color/black</item>
+        <item name="android:statusBarColor">@color/greenAccent</item>
+        <item name="android:windowBackground">@color/greenBackground</item>
     </style>
-
-    <style name="Theme.Money.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
-
-    <style name="Theme.Money.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />
 </resources>

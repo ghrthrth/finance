@@ -4,17 +4,17 @@
 
     <item
         android:id="@+id/nav_create_news"
-        android:icon="@drawable/ic_menu_camera"
+        android:icon="@drawable/house"
         android:title="Главная" />
 
     <item
         android:id="@+id/nav_gallery"
-        android:icon="@drawable/ic_menu_gallery"
-        android:title="Панель" />
+        android:icon="@drawable/diagram"
+        android:title="Диаграмма" />
 
     <item
         android:id="@+id/nav_settings"
-        android:icon="@drawable/ic_menu_slideshow"
-        android:title="Уведомления" />
+        android:icon="@drawable/settings"
+        android:title="Настройки" />
 
 </menu>

@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Светлая тема -->
     <style name="RoundedTextInputLayout" parent="Widget.MaterialComponents.TextInputLayout.OutlinedBox">
         <item name="boxBackgroundMode">outline</item>
         <item name="boxCornerRadiusTopStart">12dp</item>
@@ -9,51 +8,33 @@
         <item name="boxCornerRadiusBottomEnd">12dp</item>
     </style>
 
+    <!-- Базовый стиль для TextInputLayout -->
     <style name="TextInputLayoutStyle" parent="Widget.MaterialComponents.TextInputLayout.OutlinedBox">
-        <item name="boxStrokeColor">@color/primaryColor</item>
+        <item name="boxStrokeColor">?attr/colorPrimary</item>
         <item name="boxCornerRadiusTopStart">8dp</item>
         <item name="boxCornerRadiusTopEnd">8dp</item>
         <item name="boxCornerRadiusBottomStart">8dp</item>
         <item name="boxCornerRadiusBottomEnd">8dp</item>
     </style>
 
+    <!-- Базовый стиль для MaterialButton -->
     <style name="ButtonStyle" parent="Widget.MaterialComponents.Button">
-        <item name="backgroundTint">@color/primaryColor</item>
+        <item name="backgroundTint">?attr/colorPrimary</item>
+        <item name="android:textColor">?attr/colorOnPrimary</item>
         <item name="cornerRadius">24dp</item>
-        <item name="android:textColor">@android:color/white</item>
     </style>
 
-    <!-- Темная тема -->
-    <style name="RoundedTextInputLayout.Dark" parent="Widget.MaterialComponents.TextInputLayout.OutlinedBox">
-        <item name="boxBackgroundMode">outline</item>
-        <item name="boxCornerRadiusTopStart">12dp</item>
-        <item name="boxCornerRadiusTopEnd">12dp</item>
-        <item name="boxCornerRadiusBottomStart">12dp</item>
-        <item name="boxCornerRadiusBottomEnd">12dp</item>
-        <item name="boxStrokeColor">@color/dark_boxStrokeColor</item>
+    <style name="RadioButton" parent="Widget.MaterialComponents.CompoundButton.RadioButton">
+        <item name="buttonTint">?attr/colorPrimary</item>
     </style>
 
-    <style name="TextInputLayoutStyle.Dark" parent="Widget.MaterialComponents.TextInputLayout.OutlinedBox">
-        <item name="boxStrokeColor">@color/dark_boxStrokeColor</item>
-        <item name="boxCornerRadiusTopStart">8dp</item>
-        <item name="boxCornerRadiusTopEnd">8dp</item>
-        <item name="boxCornerRadiusBottomStart">8dp</item>
-        <item name="boxCornerRadiusBottomEnd">8dp</item>
+    <style name="ToolbarStyle" parent="Widget.MaterialComponents.Toolbar">
+        <item name="background">?attr/colorPrimary</item> <!-- Цвет фона Toolbar -->
     </style>
 
-    <style name="ButtonStyle.Dark" parent="Widget.MaterialComponents.Button">
-        <item name="backgroundTint">@color/dark_primaryColor</item>
-        <item name="cornerRadius">24dp</item>
-        <item name="android:textColor">@color/dark_textColor</item>
+    <style name="Theme.Money.AppBarOverlay" parent="ThemeOverlay.MaterialComponents.Dark.ActionBar">
+        <item name="colorSurface">?attr/colorPrimary</item> <!-- Используйте цвет из темы -->
     </style>
 
-    <style name="AppTheme.Dark" parent="Theme.MaterialComponents.DayNight">
-        <item name="colorPrimary">@color/dark_primaryColor</item>
-        <item name="colorPrimaryDark">@color/dark_primaryDarkColor</item>
-        <item name="colorAccent">@color/dark_accentColor</item>
-        <item name="android:windowBackground">@color/dark_background</item>
-        <item name="android:textColor">@color/white</item>
-        <item name="textInputStyle">@style/TextInputLayoutStyle.Dark</item>
-        <item name="materialButtonStyle">@style/ButtonStyle.Dark</item>
-    </style>
+
 </resources>
