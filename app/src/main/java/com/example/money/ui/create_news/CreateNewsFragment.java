@@ -183,11 +183,16 @@ public class CreateNewsFragment extends Fragment {
 
         // Общая сумма (доходы - расходы)
         double totalAmount = totalIncome - totalExpense;
-
+        String incomesText = getString(R.string.incomes);
+        String consumptionsText = getString(R.string.consumptions);
         // Обновляем TextView
-        tvIncome.setText("Доходы: " + totalIncome);
-        tvExpense.setText("Расходы: " + totalExpense);
-        tvTotalAmount.setText("Общая сумма: " + totalAmount);
+        tvIncome.setText(incomesText + " " + totalIncome);
+        tvExpense.setText(consumptionsText + " " + totalExpense);
+// Получаем строку из resources
+        String totalSumText = getString(R.string.total_sum);
+
+// Устанавливаем текст в TextView
+        tvTotalAmount.setText(totalSumText + " " + totalAmount);
     }
 
     @Override

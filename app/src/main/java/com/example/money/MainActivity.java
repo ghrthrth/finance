@@ -35,6 +35,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         applySavedTheme(); // Применяем тему до setContentView
+        applySavedLanguage(); // Применяем язык
         super.onCreate(savedInstanceState);
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
@@ -69,6 +70,18 @@ public class MainActivity extends AppCompatActivity {
         if (savedInstanceState == null) {
             loadFragment(new CreateNewsFragment());
         }
+    }
+
+    private void applySavedLanguage() {
+        SharedPreferences preferences = getSharedPreferences("settings", MODE_PRIVATE);
+        String language = preferences.getString("language", "ru"); // По умолчанию русский
+
+        // Устанавливаем локаль
+        Locale locale = new Locale(language);
+        Locale.setDefault(locale);
+        Configuration config = new Configuration();
+        config.locale = locale;
+        getResources().updateConfiguration(config, getResources().getDisplayMetrics());
     }
     private void applySavedTheme() {
         SharedPreferences preferences = getSharedPreferences(THEME_PREFERENCE, MODE_PRIVATE);

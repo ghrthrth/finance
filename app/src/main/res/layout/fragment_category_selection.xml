@@ -19,7 +19,7 @@
         android:id="@+id/btnAddCategory"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Добавить категорию/и"
+        android:text="@string/add_category"
         android:layout_marginTop="16dp"
         style="@style/ButtonStyle"
         android:textColor="?attr/colorOnPrimary"

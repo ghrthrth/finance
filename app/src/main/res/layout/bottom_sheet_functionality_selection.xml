@@ -10,7 +10,7 @@
         android:id="@+id/btnIncome"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Доходы"
+        android:text="@string/incomes"
         android:layout_marginBottom="8dp"
         app:cornerRadius="24dp"/>
 
@@ -18,6 +18,6 @@
         android:id="@+id/btnExpense"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Расходы"
+        android:text="@string/consumptions"
         app:cornerRadius="24dp"/>
 </LinearLayout>

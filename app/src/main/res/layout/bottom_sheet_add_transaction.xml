@@ -14,7 +14,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
         android:textColorHint="@color/black"
-        android:hint="Введите сумму"
+        android:hint="@string/input_sum"
         app:boxStrokeColor="@color/box_stroke_color_selector"
         app:boxStrokeWidth="3dp">
 
@@ -31,7 +31,7 @@
         android:id="@+id/btnChooseCategory"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Выбрать категорию"
+        android:text="@string/choose_category"
         android:textSize="13sp"
         app:cornerRadius="24dp"/>
 
@@ -39,7 +39,7 @@
         android:id="@+id/btnChooseDateTime"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Выбрать дату и время"
+        android:text="@string/choose_date"
         android:textSize="13sp"
         app:cornerRadius="24dp"/>
 
@@ -47,7 +47,7 @@
         android:id="@+id/tvSelectedDateTime"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Дата и время не выбраны"
+        android:text="@string/wrong_not_chs_date"
         android:layout_marginTop="8dp" />
 
     <RadioGroup
@@ -60,20 +60,20 @@
             android:id="@+id/radioIncome"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Доход" />
+            android:text="@string/income" />
 
         <RadioButton
             android:id="@+id/radioExpense"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Расход" />
+            android:text="@string/consumption" />
     </RadioGroup>
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnSave"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Сохранить"
+        android:text="@string/save"
         android:textSize="13sp"
         app:cornerRadius="24dp"/>
 </LinearLayout>

@@ -9,26 +9,26 @@
         android:id="@+id/input_login"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Login" />
+        android:hint="@string/login" />
 
     <EditText
         android:id="@+id/input_password"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Password"
+        android:hint="@string/password"
         android:inputType="textPassword" />
 
     <Button
         android:id="@+id/login_button"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Login" />
+        android:text="@string/login" />
 
     <Button
         android:id="@+id/go_to_registration"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Перейти к регистрации" />
+        android:text="@string/go_register" />
 
 
 </LinearLayout>

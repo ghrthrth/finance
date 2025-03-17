@@ -18,7 +18,7 @@
         android:fontFamily="sans-serif-medium"
         android:gravity="center"
         android:paddingVertical="14dp"
-        android:text="Фильтр по дате"
+        android:text="@string/filter_date"
         style="@style/ButtonStyle"
         android:textColor="?attr/colorOnPrimary"
         android:textSize="16sp"
@@ -50,7 +50,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="16dp"
                 android:checked="true"
-                android:text="Все"
+                android:text="@string/all"
                 style="@style/RadioButton"
                  /> <!-- Отступ между кнопками -->
 
@@ -59,7 +59,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="16dp"
-                android:text="Доходы"
+                android:text="@string/incomes"
                 style="@style/RadioButton"
                  /> <!-- Отступ между кнопками -->
 
@@ -67,7 +67,7 @@
                 android:id="@+id/radioExpense"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Расходы"
+                android:text="@string/consumptions"
                 style="@style/RadioButton"
                 />
         </RadioGroup>
@@ -86,7 +86,7 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center_horizontal"
             android:padding="16dp"
-            android:text="Общая сумма: 0"
+            android:text="@string/total_sum"
             android:textColor="@color/black"
             android:textSize="18sp" />
     </com.google.android.material.card.MaterialCardView>
@@ -110,7 +110,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:padding="16dp"
-                android:text="Доходы: 0"
+                android:text="@string/incomes"
                 android:textColor="@color/black"
                 android:textSize="16sp" />
         </com.google.android.material.card.MaterialCardView>
@@ -126,7 +126,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:padding="16dp"
-                android:text="Расходы: 0"
+                android:text="@string/consumptions"
                 android:textColor="@color/black"
                 android:textSize="16sp" />
         </com.google.android.material.card.MaterialCardView>
@@ -138,7 +138,7 @@
         android:layout_gravity="center_horizontal"
         android:layout_marginBottom="8dp"
         android:gravity="center"
-        android:text="История транзакций:"
+        android:text="@string/transaction_history"
         android:textColor="@color/black"
         android:textSize="18sp" />
 

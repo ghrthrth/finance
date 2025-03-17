@@ -5,16 +5,16 @@
     <item
         android:id="@+id/nav_create_news"
         android:icon="@drawable/house"
-        android:title="Главная" />
+        android:title="@string/main" />
 
     <item
         android:id="@+id/nav_gallery"
         android:icon="@drawable/diagram"
-        android:title="Диаграмма" />
+        android:title="@string/diagram" />
 
     <item
         android:id="@+id/nav_settings"
         android:icon="@drawable/settings"
-        android:title="Настройки" />
+        android:title="@string/settings" />
 
 </menu>
