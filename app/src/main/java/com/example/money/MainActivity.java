@@ -1,22 +1,26 @@
 package com.example.money;
 
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.res.Configuration;
 import android.os.Bundle;
 import android.view.View;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.app.AppCompatDelegate;
 import androidx.fragment.app.Fragment;
 
 import com.example.money.databinding.ActivityMainBinding;
 import com.example.money.services.SyncService;
 import com.example.money.ui.create_news.CreateNewsFragment;
 import com.example.money.ui.home.HomeFragment;
-import com.example.money.ui.slideshow.SlideshowFragment;
+import com.example.money.ui.settings.SettingsFragment;
 import com.example.money.utils.NetworkUtils;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
 
@@ -34,7 +38,7 @@ public class MainActivity extends AppCompatActivity {
         if (NetworkUtils.isNetworkAvailable(this)) {
             SyncService.startSync(this);
         }
-
+        loadSettings();
         setupFragments();
         setupBottomNavigation();
 
@@ -63,10 +67,18 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    private void loadSettings() {
+        SharedPreferences preferences = this.getSharedPreferences("settings", Context.MODE_PRIVATE);
+        int theme = preferences.getInt("theme", AppCompatDelegate.MODE_NIGHT_NO);
+
+        // Применение темы
+        AppCompatDelegate.setDefaultNightMode(theme);
+    }
+
     private void setupFragments() {
         fragmentMap.put(R.id.nav_create_news, new CreateNewsFragment());
         fragmentMap.put(R.id.nav_gallery, new HomeFragment());
-        fragmentMap.put(R.id.nav_slideshow, new SlideshowFragment());
+        fragmentMap.put(R.id.nav_settings, new SettingsFragment());
     }
 
     private void setupBottomNavigation() {
